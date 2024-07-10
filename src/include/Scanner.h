@@ -25,6 +25,7 @@ namespace Lox
       void string();
       void number();
       void identifier();
+      void newfunction();
       bool match(char expected);
       char peek() const;
       char peekNext() const;

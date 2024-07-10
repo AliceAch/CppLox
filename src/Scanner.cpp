@@ -2,7 +2,7 @@
 #include "Lox.h"
 #include <cctype>
 #include <fmt/core.h>
-
+// testing comment
 namespace Lox 
 {
   Scanner::Scanner(std::string source) : source(std::move(source))
@@ -140,6 +140,10 @@ namespace Lox
 			addToken(TokenType::IDENTIFIER);
 		}	
   }
+void Scanner::newfunction()
+{
+  //Does something else
+}
 
   bool Scanner::match(char expected) 
   {
