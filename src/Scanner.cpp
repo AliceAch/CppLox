@@ -140,10 +140,6 @@ namespace Lox
 			addToken(TokenType::IDENTIFIER);
 		}	
   }
-void Scanner::newfunction()
-{
-  //Does something else
-}
 
   bool Scanner::match(char expected) 
   {
