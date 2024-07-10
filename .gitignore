@@ -33,3 +33,6 @@
 
 # Build directory
 build/
+
+#Personal access token
+PAT.txt
