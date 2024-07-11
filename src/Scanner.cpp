@@ -141,7 +141,6 @@ namespace Lox
 		}	
   }
 
-  }
   bool Scanner::match(char expected) 
   {
     if (isAtEnd()) 
