@@ -2,7 +2,7 @@
 #include "Lox.h"
 #include <cctype>
 #include <fmt/core.h>
-
+// testing comment
 namespace Lox 
 {
   Scanner::Scanner(std::string source) : source(std::move(source))
@@ -68,6 +68,8 @@ namespace Lox
           // A comment goes until the end of the line.
           while (peek() != '\n' && !isAtEnd())
             advance();
+        } else if (match('*')) {
+            mComment();          
         } else {
           addToken(TokenType::SLASH);
         }
@@ -140,7 +142,24 @@ namespace Lox
 			addToken(TokenType::IDENTIFIER);
 		}	
   }
+  void Scanner::mComment()
+  {
+    // Keep going until you find '*/'
+    while((peek() != '*' && peekNext() != '/') && (!isAtEnd() || !(peekNext() == '\0'))){
+      if (peek() == '\n')
+        line++;
+      advance();
+    }
+    // the '*' and '/' are not being consumed properly
+    if(!isAtEnd()){
+      // Consume the '*' and '/'
+      advance();
+    }
+    if(!isAtEnd()){
+      advance();
+    }
 
+  }
   bool Scanner::match(char expected) 
   {
     if (isAtEnd()) 
