@@ -34,5 +34,8 @@
 # Build directory
 build/
 
+# Tool directory
+#tool/
+
 #Personal access token
 PAT.txt

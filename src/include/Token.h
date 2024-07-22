@@ -14,10 +14,10 @@ namespace Lox
       Token(TokenType type, std::string lexeme, int line);
       std::string toString() const;
       std::string literalToString() const;
-    private:
-      TokenType type;
       std::string lexeme;
       std::any literal;
+    private:
+      TokenType type;
       int line;
   };
 }

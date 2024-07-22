@@ -7,6 +7,7 @@
 #include <fmt/core.h>
 #include "Lox.h"
 #include "Scanner.h"
+#include "AstPrinter.h"
 
 #define LOX_VERSION "0.0.1"
 
@@ -71,3 +72,18 @@ int main(int args, char* argv[])
   }
   return 0;
 }
+
+/*
+using namespace Lox;
+int main(int args, char* argv[])
+{
+  Expr* expression = new Binary(
+      std::make_unique<Unary>(
+        Token(TokenType::MINUS, "-", NULL, 1),
+        std::make_unique<Literal>(123)),
+      Token(TokenType::STAR, "*", NULL, 1),
+      std::make_unique<Grouping>(std::make_unique<Literal>(45.67)));
+  AstPrinter printer;
+  std::cout << "Printing:" << printer.print(*expression) << std::endl;
+}
+*/
