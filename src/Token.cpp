@@ -30,4 +30,13 @@ namespace Lox
     }
 
   }
+  TokenType Token::getType()
+  {
+    return type;
+  }
+
+  int Token::getLine() const
+  {
+    return line;
+  }
 }

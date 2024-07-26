@@ -1,3 +1,4 @@
+#do not use the makefile, use cmake instead
 CC=g++
 
 MODE=debug

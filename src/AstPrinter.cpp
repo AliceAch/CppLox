@@ -17,6 +17,8 @@ namespace Lox {
       stream_ << std::any_cast<int>(expr.literal);
     else if (expr.literal.type() == typeid(std::string))
       stream_ << std::any_cast<std::string>(expr.literal);
+    else if (expr.literal.type() == typeid(bool))
+      stream_ << std::any_cast<bool>(expr.literal);
     else if (expr.literal.type() == typeid(NULL))
       stream_ << "nil";
     else 

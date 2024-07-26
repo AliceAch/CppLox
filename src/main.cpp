@@ -7,6 +7,7 @@
 #include <fmt/core.h>
 #include "Lox.h"
 #include "Scanner.h"
+#include "Parser.h"
 #include "AstPrinter.h"
 
 #define LOX_VERSION "0.0.1"
@@ -15,12 +16,20 @@ void run(const std::string& source)
 {
   Lox::Scanner scanner(source);
   std::vector<Lox::Token> tokens = scanner.scanTokens();
+  Lox::Parser Parser(tokens);
+  std::unique_ptr<Lox::Expr> expression = Parser.parse();
+
   if (Lox::Lox::HadError) {
     return;
   }
+  /*
   std::cout << tokens.size() << std::endl;
   for(auto itr = tokens.begin(); itr != tokens.end(); itr++)
     std::cout << (*itr).toString() << " " << std::endl;
+    */
+  Lox::AstPrinter printer;
+  std::cout << printer.print(*expression.get()) << std::endl;
+
 }
 
 void runFile(const std::string& path)

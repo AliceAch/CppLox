@@ -39,3 +39,6 @@ build/
 
 #Personal access token
 PAT.txt
+
+#VS code stuff
+.vscode/

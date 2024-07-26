@@ -18,6 +18,7 @@ target_sources(lox
         Scanner.cpp
         Token.cpp
         AstPrinter.cpp
+        Parser.cpp
 )
 
 add_executable(lox_repl)
