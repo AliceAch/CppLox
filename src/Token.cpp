@@ -30,7 +30,7 @@ namespace Lox
     }
 
   }
-  TokenType Token::getType()
+  TokenType Token::getType() const
   {
     return type;
   }

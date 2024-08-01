@@ -8,16 +8,21 @@
 #include "Lox.h"
 #include "Scanner.h"
 #include "Parser.h"
+#include "Interpreter.h"
 #include "AstPrinter.h"
 
 #define LOX_VERSION "0.0.1"
 
+namespace 
+{
+  static Lox::Interpreter Interpreter;
+}
+
 void run(const std::string& source) 
 {
   Lox::Scanner scanner(source);
-  std::vector<Lox::Token> tokens = scanner.scanTokens();
-  Lox::Parser Parser(tokens);
-  std::unique_ptr<Lox::Expr> expression = Parser.parse();
+  Lox::Parser parser(scanner.scanTokens());
+  std::unique_ptr<Lox::Expr> expression = parser.parse();
 
   if (Lox::Lox::HadError) {
     return;
@@ -27,8 +32,7 @@ void run(const std::string& source)
   for(auto itr = tokens.begin(); itr != tokens.end(); itr++)
     std::cout << (*itr).toString() << " " << std::endl;
     */
-  Lox::AstPrinter printer;
-  std::cout << printer.print(*expression.get()) << std::endl;
+  Interpreter.interpret(expression);
 
 }
 
@@ -50,6 +54,8 @@ void runFile(const std::string& path)
   run(source);
   if (Lox::Lox::HadError)
     exit(2);
+  if(Lox::Lox::HadRuntimeError)
+    exit(3);
 }
 
 void runPrompt()
@@ -83,16 +89,15 @@ int main(int args, char* argv[])
 }
 
 /*
-using namespace Lox;
 int main(int args, char* argv[])
 {
-  Expr* expression = new Binary(
-      std::make_unique<Unary>(
-        Token(TokenType::MINUS, "-", NULL, 1),
-        std::make_unique<Literal>(123)),
-      Token(TokenType::STAR, "*", NULL, 1),
-      std::make_unique<Grouping>(std::make_unique<Literal>(45.67)));
-  AstPrinter printer;
-  std::cout << "Printing:" << printer.print(*expression) << std::endl;
+  Lox::Expr* expression = new Lox::Binary(
+      std::make_unique<Lox::Unary>(
+        Lox::Token(Lox::TokenType::MINUS, "-", NULL, 1),
+        std::make_unique<Lox::Literal>(123)),
+      Lox::Token(Lox::TokenType::STAR, "*", NULL, 1),
+      std::make_unique<Lox::Grouping>(std::make_unique<Lox::Literal>(45.67)));
+  Lox::AstPrinter printer;
+  std::cout << printer.print(*expression) << std::endl;
 }
 */

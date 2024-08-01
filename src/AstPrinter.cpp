@@ -4,62 +4,67 @@
 #include "AstPrinter.h"
 
 namespace Lox { 
-  void AstPrinter::visit_binary_expr(const Binary& expr)
+  std::any AstPrinter::visit_binary_expr(const Binary& expr)
   {
-    paranthesise(expr.op.lexeme, {expr.left.get(), expr.right.get()});
+    return paranthesise(expr.op.lexeme, {expr.left.get(), expr.right.get()});
   }
-  void AstPrinter::visit_literal_expr(const Literal& expr)
+  std::any AstPrinter::visit_literal_expr(const Literal& expr)
   {
+    std::stringstream stream("");
     // Fix std::any conversion errors here
-    if (expr.literal.type() == typeid(double))
-      stream_ << std::any_cast<double>(expr.literal);
+    if (expr.literal.type() == typeid(double)) {
+        double n = std::any_cast<double>(expr.literal);
+        if (std::trunc(n) == n) { // is int
+            return std::to_string((int)n);
+        } else {
+            return std::to_string(n); // TODO: don't print trailing zeros
+        }
+    }
     else if (expr.literal.type() == typeid(int))
-      stream_ << std::any_cast<int>(expr.literal);
+      stream << std::any_cast<int>(expr.literal);
     else if (expr.literal.type() == typeid(std::string))
-      stream_ << std::any_cast<std::string>(expr.literal);
+      stream << std::any_cast<std::string>(expr.literal);
     else if (expr.literal.type() == typeid(bool))
-      stream_ << std::any_cast<bool>(expr.literal);
-    else if (expr.literal.type() == typeid(NULL))
-      stream_ << "nil";
+      stream << std::any_cast<bool>(expr.literal);
+    else if (!expr.literal.has_value())
+      stream << "nil";
     else 
-      stream_ << " ";
-      
+      stream << "";
+
+    return stream.str();
   }
-  void AstPrinter::visit_grouping_expr(const Grouping& expr)
+  std::any AstPrinter::visit_grouping_expr(const Grouping& expr)
   {
-    paranthesise("group", {expr.expression.get()});
+    return paranthesise("group", {expr.expr.get()});
   }
-  void AstPrinter::visit_unary_expr(const Unary& expr)
+  std::any AstPrinter::visit_unary_expr(const Unary& expr)
   {
-    paranthesise(expr.op.lexeme, {expr.right.get()});
+    return paranthesise(expr.op.lexeme, {expr.right.get()});
   }
-  void AstPrinter::paranthesise(const std::string& name,
+  std::string AstPrinter::paranthesise(const std::string& name,
       std::initializer_list<const Expr*> exprs)
   {
-    stream_ << '(' << name;
+    std::stringstream stream("");
+    stream << '(' << name;
 
     for (const auto expr : exprs) {
       if (expr == nullptr) {
         continue;
       }
-      stream_ << ' ';
+      stream << ' ';
       // Might have to add this to stream ?
-      expr->accept(*this);
+      stream << std::any_cast<std::string>(expr->accept(*this));
     }
 
-    stream_ << ')';
+    stream << ')';
+
+    return stream.str();
   }
 
-
-  void AstPrinter::set_indent(const unsigned int indent)
+  std::string AstPrinter::print(const Expr& expr)
   {
-    indent_level_ = indent;
-    indent_ = std::string(indent_level_ * 2, ' ');
-  }
-std::string AstPrinter::print(const Expr& expr)
-  {
-    expr.accept(*this);
-    //stream_ << "this point";
+    stream_ << std::any_cast<std::string>(expr.accept(*this));
+    //stream << "this point";
     stream_ << '\n';
     return stream_.str();
 

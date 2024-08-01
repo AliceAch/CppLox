@@ -18,13 +18,14 @@ namespace Lox
   {
     virtual ~{{ base_name }}() = default;
 
+    template<typename R>
     class Visitor
     {
     public:{% for spec in class_specs %}
-      virtual void visit_{{ spec.name|lower }}_{{ base_name|lower }}(const {{ spec.name }}& {{ base_name|lower }}) = 0;{% endfor %}
+      virtual R visit_{{ spec.name|lower }}_{{ base_name|lower }}(const {{ spec.name }}& {{ base_name|lower }}) = 0;{% endfor %}
     };
 
-    virtual void accept(Visitor&) const {}
+    virtual std::any accept(Visitor&) const {}
   };
 {% for spec in class_specs %}
 
@@ -34,7 +35,7 @@ namespace Lox
         : {{ spec.initialisers }}
     {}
 
-    void accept(Visitor& visitor) const override
+    std::any accept(Visitor& visitor) const override
     { visitor.visit_{{ spec.name|lower }}_{{ base_name|lower }}(*this); }
 
     {{ spec.members }}

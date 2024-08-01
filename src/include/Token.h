@@ -16,7 +16,7 @@ namespace Lox
       std::string literalToString() const;
       std::string lexeme;
       std::any literal;
-      TokenType getType();
+      TokenType getType() const;
       int getLine() const;
     private:
       TokenType type;

@@ -1,90 +1,110 @@
 #pragma once
 
 #include <memory>
-#include <vector>
-#include <utility>
 #include <any>
+#include <cassert>
+#include <cmath>
 
 #include "Token.h"
 
-
 namespace Lox
 {
+class Binary;
+class Grouping;
+class Literal;
+class Unary;
 
-  struct Binary;
-  struct Grouping;
-  struct Literal;
-  struct Unary;
+template<typename R>
+class Visitor {
+public:
+    ~Visitor() = default;
 
-  struct Expr
-  {
+    virtual R visit_binary_expr(const Binary& expr) = 0;
+    virtual R visit_grouping_expr(const Grouping& expr) = 0;
+    virtual R visit_literal_expr(const Literal& expr) = 0;
+    virtual R visit_unary_expr(const Unary& expr) = 0;
+};
+
+class Expr {
+public:
     virtual ~Expr() = default;
 
-    class Visitor
+    // TODO: figure out a way to accept template visitors? (complicated!)
+    virtual std::any accept(Visitor<std::any>& visitor) const = 0;
+};
+
+class Binary : public Expr {
+public:
+    Binary(std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right) :
+    left(std::move(left)),
+    op(op),
+    right(std::move(right))
     {
-    public:
-      virtual void visit_binary_expr(const Binary& expr) = 0;
-      virtual void visit_grouping_expr(const Grouping& expr) = 0;
-      virtual void visit_literal_expr(const Literal& expr) = 0;
-      virtual void visit_unary_expr(const Unary& expr) = 0;
-    };
+        assert(this->left != nullptr);
+        assert(this->right != nullptr);
+    }
+    std::any accept(Visitor<std::any>& visitor) const  
+    {
+        return visitor.visit_binary_expr(*this);
+    }
 
-    virtual void accept(Visitor&) const {}
-  };
-
-
-  struct Binary : public Expr
-  {
-    Binary(std::unique_ptr<Expr> left_arg, Token op_arg, std::unique_ptr<Expr> right_arg)
-        : left(std::move(left_arg)), op(std::move(op_arg)), right(std::move(right_arg))
-    {}
-
-    void accept(Visitor& visitor) const override
-    { visitor.visit_binary_expr(*this); }
+    const Expr& getLeftExpr() const { return *left; }
+    const Token& getOp() const { return op; }
+    const Expr& getRightExpr() const { return *right; }
 
     std::unique_ptr<Expr> left;
-   Token op;
-   std::unique_ptr<Expr> right;
-  };
+    Token op;
+    std::unique_ptr<Expr> right;
+};
 
+class Grouping : public Expr {
+public:
+    Grouping(std::unique_ptr<Expr> expr) : expr(std::move(expr))
+    {
+        assert(this->expr != nullptr);
+    }
+    std::any accept(Visitor<std::any>& visitor) const  
+    {
+        return visitor.visit_grouping_expr(*this);
+    }
 
-  struct Grouping : public Expr
-  {
-    Grouping(std::unique_ptr<Expr> expression_arg)
-        : expression(std::move(expression_arg))
+    const Expr& getExpr() const { return *expr; }
+
+    std::unique_ptr<Expr> expr;
+};
+
+class Literal : public Expr {
+public:
+    Literal(std::any literal) : literal(std::move(literal))
     {}
 
-    void accept(Visitor& visitor) const override
-    { visitor.visit_grouping_expr(*this); }
+    std::any accept(Visitor<std::any>& visitor) const  
+    {
+        return visitor.visit_literal_expr(*this);
+    }
 
-    std::unique_ptr<Expr> expression;
-  };
-
-
-  struct Literal : public Expr
-  {
-    Literal(std::any literal_arg)
-        : literal(std::move(literal_arg))
-    {}
-
-    void accept(Visitor& visitor) const override
-    { visitor.visit_literal_expr(*this); }
+    const std::any& getLiteral() const { return literal; }
 
     std::any literal;
-  };
+};
 
+class Unary : public Expr {
+public:
+    Unary(Token op, std::unique_ptr<Expr> right) : op(op), right(std::move(right))
+    {
+        assert(this->right != nullptr);
+    }
 
-  struct Unary : public Expr
-  {
-    Unary(Token op_arg, std::unique_ptr<Expr> right_arg)
-        : op(std::move(op_arg)), right(std::move(right_arg))
-    {}
+    std::any accept(Visitor<std::any>& visitor) const  
+    {
+        return visitor.visit_unary_expr(*this);
+    }
 
-    void accept(Visitor& visitor) const override
-    { visitor.visit_unary_expr(*this); }
+    const Token& getOp() const { return op; }
+    const Expr& getRightExpr() const { return *right; }
 
     Token op;
-   std::unique_ptr<Expr> right;
-  };
+    std::unique_ptr<Expr> right;
+};
 
-}
+} // end of namespace Lox

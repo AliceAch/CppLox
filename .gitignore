@@ -42,3 +42,6 @@ PAT.txt
 
 #VS code stuff
 .vscode/
+
+#Not needed anymore
+archive/
