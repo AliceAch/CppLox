@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <vector>
 #include "Expr/Expr.h"
+#include "Stmt/Stmt.h"
 #include "Token.h"
 
 namespace Lox
@@ -12,7 +13,7 @@ namespace Lox
     {
         public:
         Parser(std::vector<Token> tokens);
-        std::unique_ptr<Expr> parse();
+        std::vector<std::unique_ptr<Stmt>> parse();
 
         private:
         bool check(TokenType type) const;
@@ -34,6 +35,10 @@ namespace Lox
         };
 
         ParseError error(Token token, const char* message) const;
+
+        std::unique_ptr<Stmt> statement();
+        std::unique_ptr<Stmt> printStatement();
+        std::unique_ptr<Stmt> exprStatement();
 
         std::unique_ptr<Expr> expression();
         std::unique_ptr<Expr> assignment();

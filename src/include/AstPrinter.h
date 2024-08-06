@@ -7,7 +7,7 @@
 
 namespace Lox
 {
-  class AstPrinter : Visitor<std::any>
+  class AstPrinter : exprVisitor<std::any>
   {
     public:
       //AstPrinter();

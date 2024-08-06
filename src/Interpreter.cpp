@@ -5,17 +5,39 @@
 
 namespace Lox
 {
-    Interpreter::Interpreter()
+    Interpreter::Interpreter(std::ostream& out) : out(out) 
     {}
     //Interpreter::~Interpreter = default;
-    void Interpreter::interpret(std::unique_ptr<Expr>& expression)
+    void Interpreter::interpret(const std::vector<std::unique_ptr<Stmt>>& statements)
     {
         try {
-            std::any value = evaluate(*expression);
-            fmt::print("{}\n", stringify(value));
+            for(const auto& ptr : statements)
+            {
+                assert(ptr != nullptr);
+                execute(*ptr);
+            }
         } catch (RuntimeError error) {
             Lox::ReportRuntimeError(error);
         }
+    }
+
+    void Interpreter::execute(const Stmt& stmt)
+    {
+        stmt.accept(*this);
+    }
+
+    std::any Interpreter::visit_expression_stmt(const Expression& stmt)
+    {
+        evaluate(stmt.getExpr());
+        return {};
+    }
+
+    std::any Interpreter::visit_print_stmt(const Print& stmt)
+    {
+        std::any value = evaluate(stmt.getExpr());
+        // Using cout here because idk how to use the fmt library
+        out << stringify(value) + "\n";
+        return {};
     }
 
     std::any Interpreter::visit_literal_expr(const Literal& expr)

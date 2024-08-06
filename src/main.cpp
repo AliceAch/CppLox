@@ -15,14 +15,14 @@
 
 namespace 
 {
-  static Lox::Interpreter Interpreter;
+  static Lox::Interpreter Interpreter(std::cout);
 }
 
 void run(const std::string& source) 
 {
   Lox::Scanner scanner(source);
   Lox::Parser parser(scanner.scanTokens());
-  std::unique_ptr<Lox::Expr> expression = parser.parse();
+  std::vector<std::unique_ptr<Lox::Stmt>> statements = parser.parse();
 
   if (Lox::Lox::HadError) {
     return;
@@ -32,7 +32,7 @@ void run(const std::string& source)
   for(auto itr = tokens.begin(); itr != tokens.end(); itr++)
     std::cout << (*itr).toString() << " " << std::endl;
     */
-  Interpreter.interpret(expression);
+  Interpreter.interpret(statements);
 
 }
 

@@ -15,9 +15,9 @@ class Literal;
 class Unary;
 
 template<typename R>
-class Visitor {
+class exprVisitor {
 public:
-    ~Visitor() = default;
+    ~exprVisitor() = default;
 
     virtual R visit_binary_expr(const Binary& expr) = 0;
     virtual R visit_grouping_expr(const Grouping& expr) = 0;
@@ -29,8 +29,8 @@ class Expr {
 public:
     virtual ~Expr() = default;
 
-    // TODO: figure out a way to accept template visitors? (complicated!)
-    virtual std::any accept(Visitor<std::any>& visitor) const = 0;
+    // TODO: figure out a way to accept template exprVisitors? (complicated!)
+    virtual std::any accept(exprVisitor<std::any>& exprVisitor) const = 0;
 };
 
 class Binary : public Expr {
@@ -43,9 +43,9 @@ public:
         assert(this->left != nullptr);
         assert(this->right != nullptr);
     }
-    std::any accept(Visitor<std::any>& visitor) const  
+    std::any accept(exprVisitor<std::any>& exprVisitor) const  
     {
-        return visitor.visit_binary_expr(*this);
+        return exprVisitor.visit_binary_expr(*this);
     }
 
     const Expr& getLeftExpr() const { return *left; }
@@ -63,7 +63,7 @@ public:
     {
         assert(this->expr != nullptr);
     }
-    std::any accept(Visitor<std::any>& visitor) const  
+    std::any accept(exprVisitor<std::any>& visitor) const  
     {
         return visitor.visit_grouping_expr(*this);
     }
@@ -78,7 +78,7 @@ public:
     Literal(std::any literal) : literal(std::move(literal))
     {}
 
-    std::any accept(Visitor<std::any>& visitor) const  
+    std::any accept(exprVisitor<std::any>& visitor) const  
     {
         return visitor.visit_literal_expr(*this);
     }
@@ -95,7 +95,7 @@ public:
         assert(this->right != nullptr);
     }
 
-    std::any accept(Visitor<std::any>& visitor) const  
+    std::any accept(exprVisitor<std::any>& visitor) const  
     {
         return visitor.visit_unary_expr(*this);
     }

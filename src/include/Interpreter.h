@@ -1,17 +1,25 @@
 #include <memory>
+#include <iosfwd>
+#include <vector>
+
 #include "Expr/Expr.h"
+#include "Stmt/Stmt.h"
 #include "RuntimeError.h"
 
 
 namespace Lox
 {
-    class Interpreter : Visitor<std::any>
+    class Interpreter : exprVisitor<std::any>, stmtVisitor<std::any>
     {
     public:
-        Interpreter();
+        Interpreter(std::ostream& out);
         //~Interpreter();
-        void interpret(std::unique_ptr<Expr>& expression);
+        void interpret(const std::vector<std::unique_ptr<Stmt>>& statements);
+        void execute(const Stmt& stmt);
     private:
+        std::any visit_expression_stmt(const Expression& stmt) override;
+        std::any visit_print_stmt(const Print& stmt) override;
+
         std::any visit_literal_expr(const Literal& expr) override;
         std::any visit_grouping_expr(const Grouping& expr) override;
         std::any visit_unary_expr(const Unary& expr) override;
@@ -25,7 +33,7 @@ namespace Lox
         void checkNumberOperands(const Token& op, 
             const std::any& left, const std::any& right) const;
         
-        
+        std::ostream& out;
     };
 
 }

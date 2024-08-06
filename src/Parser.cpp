@@ -11,14 +11,41 @@ namespace Lox
         :tokens(tokens) 
     {}
 
-    std::unique_ptr<Expr> Parser::parse()
+    std::vector<std::unique_ptr<Stmt>> Parser::parse()
     {
-        try {
-            return expression();
-        } catch(ParseError error)
+        // program → statement * "EOF" ;
+        std::vector<std::unique_ptr<Stmt>> statements;
+        while(!isAtEnd())
         {
-            return NULL;
+            statements.push_back(statement());
         }
+
+        return statements;
+    }
+
+    std::unique_ptr<Stmt> Parser::statement()
+    {
+        // statement → printStatement | exprStatement ;
+        if (match(TokenType::PRINT))
+            return printStatement();
+
+        return exprStatement();
+    }
+
+    std::unique_ptr<Stmt> Parser::printStatement()
+    {
+        // printStatement → "print" expression ";" ;
+        std::unique_ptr<Expr> value = expression();
+        consume(TokenType::SEMICOLON, "Expect ';' after value.");
+        return std::make_unique<Print>(std::move(value));
+    }
+
+    std::unique_ptr<Stmt> Parser::exprStatement()
+    {
+        // exprStatement → expresion ";" ;
+        std::unique_ptr<Expr> expr = expression();
+        consume(TokenType::SEMICOLON, "Expect ';' after expression.");
+        return std::make_unique<Expression>(std::move(expr));
     }
 
 
@@ -183,7 +210,8 @@ namespace Lox
 
     Token Parser::consume(TokenType type, const char* message)
     {
-        if(check(type)) return advance();
+        if(check(type)) 
+            return advance();
 
         throw error(peek(), message);
     }
