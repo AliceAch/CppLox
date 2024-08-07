@@ -9,23 +9,29 @@
 
 namespace Lox
 {
+class Assign;  
 class Binary;
 class Grouping;
 class Literal;
 class Unary;
+class Variable;
 
 template<typename R>
-class exprVisitor {
+class exprVisitor 
+{
 public:
     ~exprVisitor() = default;
-
+    
+    virtual R visit_assign_expr(const Assign& expr) = 0;
     virtual R visit_binary_expr(const Binary& expr) = 0;
     virtual R visit_grouping_expr(const Grouping& expr) = 0;
     virtual R visit_literal_expr(const Literal& expr) = 0;
     virtual R visit_unary_expr(const Unary& expr) = 0;
+    virtual R visit_variable_expr(const Variable& expr) = 0;
 };
 
-class Expr {
+class Expr 
+{
 public:
     virtual ~Expr() = default;
 
@@ -33,7 +39,28 @@ public:
     virtual std::any accept(exprVisitor<std::any>& exprVisitor) const = 0;
 };
 
-class Binary : public Expr {
+class Assign : public Expr
+{
+public:
+  Assign(Token name, std::unique_ptr<Expr> value)
+  : name(name), value(std::move(value)) 
+  {
+    assert(this->value != nullptr);
+  }
+  std::any accept(exprVisitor<std::any>& exprVisitor) const
+  {
+    return exprVisitor.visit_assign_expr(*this);
+  }
+
+  const Token& getName() const { return name; }
+  const Expr& getValue() const { return *value; }
+
+  Token name;
+  std::unique_ptr<Expr> value;
+};
+
+class Binary : public Expr 
+{
 public:
     Binary(std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right) :
     left(std::move(left)),
@@ -57,7 +84,8 @@ public:
     std::unique_ptr<Expr> right;
 };
 
-class Grouping : public Expr {
+class Grouping : public Expr 
+{
 public:
     Grouping(std::unique_ptr<Expr> expr) : expr(std::move(expr))
     {
@@ -73,7 +101,8 @@ public:
     std::unique_ptr<Expr> expr;
 };
 
-class Literal : public Expr {
+class Literal : public Expr 
+{
 public:
     Literal(std::any literal) : literal(std::move(literal))
     {}
@@ -88,7 +117,8 @@ public:
     std::any literal;
 };
 
-class Unary : public Expr {
+class Unary : public Expr 
+{
 public:
     Unary(Token op, std::unique_ptr<Expr> right) : op(op), right(std::move(right))
     {
@@ -105,6 +135,22 @@ public:
 
     Token op;
     std::unique_ptr<Expr> right;
+};
+
+class Variable : public Expr 
+{
+public:
+  Variable(Token name)
+  : name(name) {}
+
+  std::any accept(exprVisitor<std::any>& visitor) const
+  {
+    return visitor.visit_variable_expr(*this); 
+  }
+
+  const Token& getName() const {return name;}
+
+  Token name;
 };
 
 } // end of namespace Lox

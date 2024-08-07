@@ -15,7 +15,7 @@
 
 namespace 
 {
-  static Lox::Interpreter Interpreter(std::cout);
+  static Lox::Interpreter interpreter(std::cout);
 }
 
 void run(const std::string& source) 
@@ -32,7 +32,7 @@ void run(const std::string& source)
   for(auto itr = tokens.begin(); itr != tokens.end(); itr++)
     std::cout << (*itr).toString() << " " << std::endl;
     */
-  Interpreter.interpret(statements);
+  interpreter.interpret(statements);
 
 }
 

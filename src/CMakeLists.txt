@@ -20,6 +20,7 @@ target_sources(lox
         AstPrinter.cpp
         Parser.cpp
         Interpreter.cpp
+        Environment.cpp
 )
 
 add_executable(lox_repl)

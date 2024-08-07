@@ -5,7 +5,7 @@
 
 namespace Lox
 {
-    Interpreter::Interpreter(std::ostream& out) : out(out) 
+    Interpreter::Interpreter(std::ostream& out) : out(out), environment(std::make_unique<Environment>()) 
     {}
     //Interpreter::~Interpreter = default;
     void Interpreter::interpret(const std::vector<std::unique_ptr<Stmt>>& statements)
@@ -26,6 +26,23 @@ namespace Lox
         stmt.accept(*this);
     }
 
+    void Interpreter::executeBlock(const std::vector<std::unique_ptr<Stmt>>& statements, 
+            std::unique_ptr<Environment> environment)
+    {
+        EnterEnvironmentGuard ee{*this, std::move(environment)};
+        for(const auto& statementPtr : statements) {
+          assert(statementPtr != nullptr);
+          execute(*statementPtr);
+        }
+    }
+
+
+    std::any Interpreter::visit_block_stmt(const Block& stmt)
+    {
+        executeBlock(stmt.getStmt(), std::make_unique<Environment>(environment.get()));
+        return {}; 
+    }
+
     std::any Interpreter::visit_expression_stmt(const Expression& stmt)
     {
         evaluate(stmt.getExpr());
@@ -38,6 +55,26 @@ namespace Lox
         // Using cout here because idk how to use the fmt library
         out << stringify(value) + "\n";
         return {};
+    }
+
+    std::any Interpreter::visit_var_stmt(const Var& stmt)
+    {
+      std::any value;
+      if (stmt.hasInitializer())
+      {
+        value = evaluate(stmt.getInitializer());
+      }
+
+      environment->define(stmt.getName().lexeme, value);
+      return {};
+    }
+
+    std::any Interpreter::visit_assign_expr(const Assign& expr)
+    {
+      std::any value = evaluate(expr.getValue());
+      assert(environment != nullptr);
+      environment->assign(expr.getName(), value);
+      return value;
     }
 
     std::any Interpreter::visit_literal_expr(const Literal& expr)
@@ -65,6 +102,12 @@ namespace Lox
             return std::any{};
 
         }
+    }
+
+    std::any Interpreter::visit_variable_expr(const Variable& expr)
+    {
+      assert(environment != nullptr);
+      return environment->get(expr.getName());
     }
 
     std::any Interpreter::visit_binary_expr(const Binary& expr)
@@ -187,7 +230,7 @@ namespace Lox
     {
         if(operand.type() == typeid(double)) 
             return;
-        throw RuntimeError(op, "Operand must be a number");
+        throw RuntimeError(op, "Operand must be a number.");
     }
 
     void Interpreter::checkNumberOperands(const Token& op, 
@@ -196,6 +239,19 @@ namespace Lox
         if(left.type() == typeid(double) && right.type() == typeid(double)) return;
 
         throw RuntimeError(op, "Operands must be numbers.");
+    }
+
+    Interpreter::EnterEnvironmentGuard::EnterEnvironmentGuard(Interpreter& i,
+          std::unique_ptr<Environment> env)
+    : i(i)
+    {
+      previous = std::move(i.environment);
+      i.environment = std::move(env);
+    }
+
+    Interpreter::EnterEnvironmentGuard::~EnterEnvironmentGuard()
+    {
+      i.environment = std::move(previous);
     }
 
 

@@ -13,21 +13,38 @@ namespace Lox
 
     std::vector<std::unique_ptr<Stmt>> Parser::parse()
     {
-        // program → statement * "EOF" ;
+        // program → declaration * "EOF" ;
         std::vector<std::unique_ptr<Stmt>> statements;
         while(!isAtEnd())
         {
-            statements.push_back(statement());
+            statements.push_back(declaration());
         }
 
         return statements;
     }
 
+    std::unique_ptr<Stmt> Parser::declaration()
+    {
+      // declaration → varDecl | statement ;
+      try {
+        if(match(TokenType::VAR))
+          return varDeclaration();
+
+        return statement();
+      } catch(ParseError error)
+      {
+        synchronize();
+        return nullptr;
+      }
+    }
+
     std::unique_ptr<Stmt> Parser::statement()
     {
-        // statement → printStatement | exprStatement ;
+        // statement → printStatement | exprStatement | block ;
         if (match(TokenType::PRINT))
             return printStatement();
+        if (match(TokenType::LEFT_BRACE))
+            return std::make_unique<Block>(block());
 
         return exprStatement();
     }
@@ -42,17 +59,65 @@ namespace Lox
 
     std::unique_ptr<Stmt> Parser::exprStatement()
     {
-        // exprStatement → expresion ";" ;
+        // exprStatement → expression ";" ;
         std::unique_ptr<Expr> expr = expression();
         consume(TokenType::SEMICOLON, "Expect ';' after expression.");
         return std::make_unique<Expression>(std::move(expr));
+    }
+
+    std::vector<std::unique_ptr<Stmt>> Parser::block()
+    {
+      // block → "{" declaration* "}" ;
+      std::vector<std::unique_ptr<Stmt>> statements;
+
+      while(!check(TokenType::RIGHT_BRACE) && !isAtEnd())
+      {
+        statements.push_back(declaration());
+      }
+
+      consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
+      return statements;
+    }
+
+    std::unique_ptr<Stmt> Parser::varDeclaration()
+    {
+      Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
+
+      std::unique_ptr<Expr> initializer = nullptr;
+
+      if(match(TokenType::EQUAL))
+        initializer = expression();
+
+      consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
+      return std::make_unique<Var>(name, std::move(initializer));
     }
 
 
     std::unique_ptr<Expr> Parser::expression()
     {
         // expression → assignment ;
-        return equality();
+        return assignment();
+    }
+
+    std::unique_ptr<Expr> Parser::assignment()
+    {
+        // assignment → IDENTIFIER "=" assignment | equality ;
+      auto expr = equality();
+
+      if(match(TokenType::EQUAL))
+      {
+        auto equals = previous();
+        auto value = assignment();
+
+        if(auto* varExpr = dynamic_cast<Variable*>(expr.get()); varExpr)
+        {
+          return std::make_unique<Assign>(varExpr->getName(), std::move(value));
+        }
+
+        error(equals, "Invalid assignment target.");
+      }
+
+      return expr;
     }
 
     std::unique_ptr<Expr> Parser::equality()
@@ -117,7 +182,7 @@ namespace Lox
 
     std::unique_ptr<Expr> Parser::unary() 
     {
-        // unary → ( "!" | "-" ) unary | unary;
+        // unary → ( "!" | "-" ) unary | primary ;
         if(match(TokenType::BANG, TokenType::MINUS))
         {
             Token op = previous();
@@ -132,15 +197,26 @@ namespace Lox
         // primary → NUMBER | STRING | "false" | "true" | "nil"
         // IDENTIFIER | "(" expression ")" ;
         if(match(TokenType::FALSE))
+        {
             return std::make_unique<Literal>(false);
+        }
         if(match(TokenType::TRUE))
+        {
             return std::make_unique<Literal>(true);
+        }
         if(match(TokenType::NIL))
+        {
             return std::make_unique<Literal>(std::any{});
+        }
 
         if(match(TokenType::NUMBER, TokenType::STRING))
         {
             return std::make_unique<Literal>(previous().literal);
+        }
+
+        if(match(TokenType::IDENTIFIER))
+        {
+          return std::make_unique<Variable>(previous());
         }
 
         if(match(TokenType::LEFT_PAREN))
