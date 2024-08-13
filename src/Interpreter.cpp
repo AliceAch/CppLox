@@ -60,7 +60,7 @@ namespace Lox
     std::any Interpreter::visit_var_stmt(const Var& stmt)
     {
       std::any value;
-      if (stmt.hasInitializer())
+      if (stmt.initializer != nullptr)
       {
         value = evaluate(stmt.getInitializer());
       }
@@ -89,7 +89,7 @@ namespace Lox
 
     std::any Interpreter::visit_unary_expr(const Unary& expr)
     {
-        const std::any right = evaluate(expr.getRightExpr());
+        const std::any right = evaluate(expr.getRight());
 
         switch(expr.getOp().getType())
         {
@@ -112,8 +112,8 @@ namespace Lox
 
     std::any Interpreter::visit_binary_expr(const Binary& expr)
     {
-        const std::any left = evaluate(expr.getLeftExpr());
-        const std::any right = evaluate(expr.getRightExpr());
+        const std::any left = evaluate(expr.getLeft());
+        const std::any right = evaluate(expr.getRight());
 
         switch(expr.getOp().getType())
         {   

@@ -4,7 +4,6 @@
 #include <any>
 #include <cassert>
 #include <cmath>
-#include <vector>
 
 #include "Token.h"
 
@@ -48,7 +47,7 @@ namespace Lox
        assert(this->value != nullptr);
     }
 
-    std::any accept(exprVisitor<std::any>& visitor) const
+    std::any accept(expr Visitor<std::any>& visitor) const
     { 
       return visitor.visit_assign_expr(*this); 
     }
@@ -69,7 +68,7 @@ namespace Lox
        assert(this->right != nullptr);
     }
 
-    std::any accept(exprVisitor<std::any>& visitor) const
+    std::any accept(expr Visitor<std::any>& visitor) const
     { 
       return visitor.visit_binary_expr(*this); 
     }
@@ -90,7 +89,7 @@ namespace Lox
     { assert(this->expr != nullptr);
     }
 
-    std::any accept(exprVisitor<std::any>& visitor) const
+    std::any accept(expr Visitor<std::any>& visitor) const
     { 
       return visitor.visit_grouping_expr(*this); 
     }
@@ -107,7 +106,7 @@ namespace Lox
     { 
     }
 
-    std::any accept(exprVisitor<std::any>& visitor) const
+    std::any accept(expr Visitor<std::any>& visitor) const
     { 
       return visitor.visit_literal_expr(*this); 
     }
@@ -125,7 +124,7 @@ namespace Lox
        assert(this->right != nullptr);
     }
 
-    std::any accept(exprVisitor<std::any>& visitor) const
+    std::any accept(expr Visitor<std::any>& visitor) const
     { 
       return visitor.visit_unary_expr(*this); 
     }
@@ -144,7 +143,7 @@ namespace Lox
     { 
     }
 
-    std::any accept(exprVisitor<std::any>& visitor) const
+    std::any accept(expr Visitor<std::any>& visitor) const
     { 
       return visitor.visit_variable_expr(*this); 
     }

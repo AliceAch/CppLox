@@ -4,10 +4,10 @@
 #include <any>
 #include <cassert>
 #include <cmath>
-#include <vector>
 
 #include "Token.h"
-#include "Expr/Expr.h"
+#include "<vector>"
+#include ""Expr/Expr.h""
 
 
 namespace Lox
@@ -39,19 +39,19 @@ namespace Lox
 
   struct Block : public Stmt
   {
-    Block(std::vector<std::unique_ptr<Stmt>> stmt)
+    Block(std::vector<std::unique_ptr<Stmt>>& stmt)
         : stmt(std::move(stmt))
     { 
     }
 
-    std::any accept(stmtVisitor<std::any>& visitor) const
+    std::any accept(stmt Visitor<std::any>& visitor) const
     { 
       return visitor.visit_block_stmt(*this); 
     }
 
-    const std::vector<std::unique_ptr<Stmt>>& getStmt() const { return stmt; }
+    const std::vector<std::unique_ptr<Stmt>>&& getStmt() const { return stmt; }
 
-    std::vector<std::unique_ptr<Stmt>> stmt;
+    std::vector<std::unique_ptr<Stmt>>& stmt;
   };
 
   struct Expression : public Stmt
@@ -61,7 +61,7 @@ namespace Lox
     { assert(this->expr != nullptr);
     }
 
-    std::any accept(stmtVisitor<std::any>& visitor) const
+    std::any accept(stmt Visitor<std::any>& visitor) const
     { 
       return visitor.visit_expression_stmt(*this); 
     }
@@ -78,7 +78,7 @@ namespace Lox
     { assert(this->expr != nullptr);
     }
 
-    std::any accept(stmtVisitor<std::any>& visitor) const
+    std::any accept(stmt Visitor<std::any>& visitor) const
     { 
       return visitor.visit_print_stmt(*this); 
     }
@@ -90,21 +90,22 @@ namespace Lox
 
   struct Var : public Stmt
   {
-    Var(Token name, std::unique_ptr<Expr> initializer)
-        : name(std::move(name)), initializer(std::move(initializer))
+    Var(Token name, std::unique_ptr<Expr> initialiser)
+        : name(std::move(name)), initialiser(std::move(initialiser))
     { 
+       assert(this->initialiser != nullptr);
     }
 
-    std::any accept(stmtVisitor<std::any>& visitor) const
+    std::any accept(stmt Visitor<std::any>& visitor) const
     { 
       return visitor.visit_var_stmt(*this); 
     }
 
     const Token& getName() const { return name; }
-    const Expr& getInitializer() const { return *initializer; }
+    const Expr& getInitialiser() const { return *initialiser; }
 
     Token name;
-    std::unique_ptr<Expr> initializer;
+    std::unique_ptr<Expr> initialiser;
   };
 
 }
