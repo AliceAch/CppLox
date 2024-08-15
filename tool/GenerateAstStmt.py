@@ -45,8 +45,10 @@ if __name__ == "__main__":
         {
             "Block"      : [("std::vector<std::unique_ptr<Stmt>>", "stmt", False)],
             "Expression" : [("Expr", "expr", True)],
+            "If"         : [("Expr", "condition", True), ("Stmt", "thenBranch", True), ("Stmt", "elseBranch", True)], #Remember that the elseBranch is optional
             "Print"      : [("Expr", "expr", True)],
-            "Var"        : [("Token", "name", False), ("Expr", "initializer", True)] #make sure to remove the assertation for this member variable
+            "Var"        : [("Token", "name", False), ("Expr", "initializer", True)], #make sure to remove the assertation for this member variable
+            "While"      : [("Expr", "condition", True), ("Stmt", "body", True)]
         },
         ["Expr/Expr.h"]
     )

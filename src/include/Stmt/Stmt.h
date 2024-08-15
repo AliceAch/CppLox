@@ -15,8 +15,10 @@ namespace Lox
   
   struct Block;
   struct Expression;
+  struct If;
   struct Print;
   struct Var;
+  struct While;
 
   template<typename R>
   class stmtVisitor
@@ -26,8 +28,10 @@ namespace Lox
     
     virtual R visit_block_stmt(const Block& stmt) = 0;
     virtual R visit_expression_stmt(const Expression& stmt) = 0;
+    virtual R visit_if_stmt(const If& stmt) = 0;
     virtual R visit_print_stmt(const Print& stmt) = 0;
     virtual R visit_var_stmt(const Var& stmt) = 0;
+    virtual R visit_while_stmt(const While& stmt) = 0;
   };
 
   struct Stmt
@@ -71,6 +75,29 @@ namespace Lox
     std::unique_ptr<Expr> expr;
   };
 
+  struct If : public Stmt
+  {
+    If(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch, std::unique_ptr<Stmt> elseBranch)
+        : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch))
+    { assert(this->condition != nullptr);
+       assert(this->thenBranch != nullptr);
+       //assert(this->elseBranch != nullptr);
+    }
+
+    std::any accept(stmtVisitor<std::any>& visitor) const
+    { 
+      return visitor.visit_if_stmt(*this); 
+    }
+
+    const Expr& getCondition() const { return *condition; }
+    const Stmt& getThenbranch() const { return *thenBranch; }
+    const Stmt& getElsebranch() const { return *elseBranch; }
+
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> thenBranch;
+    std::unique_ptr<Stmt> elseBranch;
+  };
+
   struct Print : public Stmt
   {
     Print(std::unique_ptr<Expr> expr)
@@ -93,6 +120,7 @@ namespace Lox
     Var(Token name, std::unique_ptr<Expr> initializer)
         : name(std::move(name)), initializer(std::move(initializer))
     { 
+       //assert(this->initializer != nullptr);
     }
 
     std::any accept(stmtVisitor<std::any>& visitor) const
@@ -105,6 +133,26 @@ namespace Lox
 
     Token name;
     std::unique_ptr<Expr> initializer;
+  };
+
+  struct While : public Stmt
+  {
+    While(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> body)
+        : condition(std::move(condition)), body(std::move(body))
+    { assert(this->condition != nullptr);
+       assert(this->body != nullptr);
+    }
+
+    std::any accept(stmtVisitor<std::any>& visitor) const
+    { 
+      return visitor.visit_while_stmt(*this); 
+    }
+
+    const Expr& getCondition() const { return *condition; }
+    const Stmt& getBody() const { return *body; }
+
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> body;
   };
 
 }

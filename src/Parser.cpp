@@ -40,13 +40,96 @@ namespace Lox
 
     std::unique_ptr<Stmt> Parser::statement()
     {
-        // statement → printStatement | exprStatement | block ;
+        // statement → ifStmt 
+        //             | forStatement
+        //             | printStatement 
+        //             | exprStatement 
+        //             | whileStatement
+        //             | block ;
+        if(match(TokenType::IF))
+            return ifStatement();
+        if(match(TokenType::FOR))
+            return forStatement();
         if (match(TokenType::PRINT))
             return printStatement();
+        if (match(TokenType::WHILE))
+            return whileStatement();
         if (match(TokenType::LEFT_BRACE))
             return std::make_unique<Block>(block());
 
         return exprStatement();
+    }
+
+    std::unique_ptr<Stmt> Parser::forStatement()
+    {
+        //forStmt → "for" "(" ( varDecl | exprStmt | ";" )
+        //          expression? ";"
+        //          expression? ")" statement ;
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'for'.");
+
+        std::unique_ptr<Stmt> initializer;
+        if (match(TokenType::SEMICOLON)) {
+            initializer = nullptr;
+        } else if(match(TokenType::VAR))
+        {
+            initializer = varDeclaration();
+        } else 
+        {
+            initializer = exprStatement();
+        }
+
+        std::unique_ptr<Expr> condition;
+        if (!check(TokenType::SEMICOLON)) 
+        {
+            condition = expression();
+        }
+        consume(TokenType::SEMICOLON, "Expect ';' after loop condition.");
+
+        std::unique_ptr<Expr> increment;
+        if (!check(TokenType::RIGHT_PAREN))
+        {
+            increment = expression();
+        }
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after clauses.");
+
+        std::unique_ptr<Stmt> body = statement();
+
+        if (increment)
+        {
+            std::vector<std::unique_ptr<Stmt>> statements;
+            statements.push_back(std::move(body));
+            statements.push_back(std::make_unique<Expression>(std::move(increment)));
+            body = std::make_unique<Block>(std::move(statements));
+        }
+
+        if (!condition)
+            condition = std::make_unique<Literal>(true);
+        body = std::make_unique<While>(std::move(condition), std::move(body));
+
+        if(initializer)
+        {
+            std::vector<std::unique_ptr<Stmt>> statements;
+            statements.push_back(std::move(initializer));
+            statements.push_back(std::move(body));
+            body = std::make_unique<Block>(std::move(statements));
+        }
+
+        return body;
+    }
+
+    std::unique_ptr<Stmt> Parser::ifStatement()
+    {
+        // ifStmt → "if" "(" expression ")" statement ( "else" statement )? ;
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+        std::unique_ptr<Expr> condition = expression();
+        consume(TokenType::RIGHT_PAREN, "Expect '(' after if condition.");
+
+        std::unique_ptr<Stmt> thenBranch = statement();
+        std::unique_ptr<Stmt> elseBranch = nullptr;
+        if(match(TokenType::ELSE))
+            elseBranch = statement();
+
+        return std::make_unique<If>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
     }
 
     std::unique_ptr<Stmt> Parser::printStatement()
@@ -92,6 +175,15 @@ namespace Lox
       return std::make_unique<Var>(name, std::move(initializer));
     }
 
+    std::unique_ptr<Stmt> Parser::whileStatement()
+    {
+        consume(TokenType::LEFT_PAREN, "Expect '(' after 'while'.");
+        std::unique_ptr<Expr> condition = expression();
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after condition.");
+        std::unique_ptr<Stmt> body = statement();
+
+        return std::make_unique<While>(std::move(condition), std::move(body));
+    }
 
     std::unique_ptr<Expr> Parser::expression()
     {
@@ -101,8 +193,8 @@ namespace Lox
 
     std::unique_ptr<Expr> Parser::assignment()
     {
-        // assignment → IDENTIFIER "=" assignment | equality ;
-      auto expr = equality();
+        // assignment → IDENTIFIER "=" assignment | logic_or ;
+      auto expr = logicalOr();
 
       if(match(TokenType::EQUAL))
       {
@@ -118,6 +210,35 @@ namespace Lox
       }
 
       return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::logicalOr()
+    {
+        // logic_or → logic_and ( "or" logic_and )* ;
+        std::unique_ptr<Expr> expr = logicalAnd();
+
+        while(match(TokenType::OR))
+        {
+            Token op  = previous();
+            std::unique_ptr<Expr> right = logicalAnd();
+            expr = std::make_unique<Logical>(std::move(expr), op, std::move(right)); 
+        }
+        return expr;
+    }
+
+    std::unique_ptr<Expr> Parser::logicalAnd()
+    {
+        // logic_and → equality ( "and" equality )* ;
+        std::unique_ptr<Expr> expr = equality();
+
+        while(match(TokenType::AND))
+        {
+            Token op = previous();
+            std::unique_ptr<Expr> right = equality();
+            expr = std::make_unique<Logical>(std::move(expr), op, std::move(right));
+        }
+
+        return expr;
     }
 
     std::unique_ptr<Expr> Parser::equality()

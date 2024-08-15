@@ -48,7 +48,7 @@ namespace Lox
       return;
     }
 
-    throw RuntimeError(name, fmt::format("Undefined variable '{}.'", name.lexeme));
+    throw RuntimeError(name, fmt::format("Undefined variable '{}'.", name.lexeme));
   }
 
   void Environment::define(const std::string& name, const std::any& value)

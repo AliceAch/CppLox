@@ -4,10 +4,10 @@
 #include <any>
 #include <cassert>
 #include <cmath>
+#include <vector>
 
 #include "Token.h"
-#include "<vector>"
-#include ""Expr/Expr.h""
+#include "Expr/Expr.h"
 
 
 namespace Lox
@@ -15,6 +15,7 @@ namespace Lox
   
   struct Block;
   struct Expression;
+  struct If;
   struct Print;
   struct Var;
 
@@ -26,6 +27,7 @@ namespace Lox
     
     virtual R visit_block_stmt(const Block& stmt) = 0;
     virtual R visit_expression_stmt(const Expression& stmt) = 0;
+    virtual R visit_if_stmt(const If& stmt) = 0;
     virtual R visit_print_stmt(const Print& stmt) = 0;
     virtual R visit_var_stmt(const Var& stmt) = 0;
   };
@@ -39,19 +41,19 @@ namespace Lox
 
   struct Block : public Stmt
   {
-    Block(std::vector<std::unique_ptr<Stmt>>& stmt)
+    Block(std::vector<std::unique_ptr<Stmt>> stmt)
         : stmt(std::move(stmt))
     { 
     }
 
-    std::any accept(stmt Visitor<std::any>& visitor) const
+    std::any accept(stmtVisitor<std::any>& visitor) const
     { 
       return visitor.visit_block_stmt(*this); 
     }
 
-    const std::vector<std::unique_ptr<Stmt>>&& getStmt() const { return stmt; }
+    const std::vector<std::unique_ptr<Stmt>>& getStmt() const { return stmt; }
 
-    std::vector<std::unique_ptr<Stmt>>& stmt;
+    std::vector<std::unique_ptr<Stmt>> stmt;
   };
 
   struct Expression : public Stmt
@@ -61,7 +63,7 @@ namespace Lox
     { assert(this->expr != nullptr);
     }
 
-    std::any accept(stmt Visitor<std::any>& visitor) const
+    std::any accept(stmtVisitor<std::any>& visitor) const
     { 
       return visitor.visit_expression_stmt(*this); 
     }
@@ -71,6 +73,29 @@ namespace Lox
     std::unique_ptr<Expr> expr;
   };
 
+  struct If : public Stmt
+  {
+    If(std::unique_ptr<Expr> condition, std::unique_ptr<Stmt> thenBranch, std::unique_ptr<Stmt> elseBranch)
+        : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch))
+    { assert(this->condition != nullptr);
+       assert(this->thenBranch != nullptr);
+       assert(this->elseBranch != nullptr);
+    }
+
+    std::any accept(stmtVisitor<std::any>& visitor) const
+    { 
+      return visitor.visit_if_stmt(*this); 
+    }
+
+    const Expr& getCondition() const { return *condition; }
+    const Stmt& getThenbranch() const { return *thenBranch; }
+    const Stmt& getElsebranch() const { return *elseBranch; }
+
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> thenBranch;
+    std::unique_ptr<Stmt> elseBranch;
+  };
+
   struct Print : public Stmt
   {
     Print(std::unique_ptr<Expr> expr)
@@ -78,7 +103,7 @@ namespace Lox
     { assert(this->expr != nullptr);
     }
 
-    std::any accept(stmt Visitor<std::any>& visitor) const
+    std::any accept(stmtVisitor<std::any>& visitor) const
     { 
       return visitor.visit_print_stmt(*this); 
     }
@@ -90,22 +115,22 @@ namespace Lox
 
   struct Var : public Stmt
   {
-    Var(Token name, std::unique_ptr<Expr> initialiser)
-        : name(std::move(name)), initialiser(std::move(initialiser))
+    Var(Token name, std::unique_ptr<Expr> initializer)
+        : name(std::move(name)), initializer(std::move(initializer))
     { 
-       assert(this->initialiser != nullptr);
+       assert(this->initializer != nullptr);
     }
 
-    std::any accept(stmt Visitor<std::any>& visitor) const
+    std::any accept(stmtVisitor<std::any>& visitor) const
     { 
       return visitor.visit_var_stmt(*this); 
     }
 
     const Token& getName() const { return name; }
-    const Expr& getInitialiser() const { return *initialiser; }
+    const Expr& getInitializer() const { return *initializer; }
 
     Token name;
-    std::unique_ptr<Expr> initialiser;
+    std::unique_ptr<Expr> initializer;
   };
 
 }

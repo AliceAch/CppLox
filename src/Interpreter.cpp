@@ -49,6 +49,18 @@ namespace Lox
         return {};
     }
 
+    std::any Interpreter::visit_if_stmt(const If& stmt)
+    {
+        if(isTruthy(evaluate(stmt.getCondition())))
+        {
+            execute(stmt.getThenbranch());
+        } else if (stmt.elseBranch != nullptr)
+        {
+            execute(stmt.getElsebranch());
+        }
+        return {};
+    }
+
     std::any Interpreter::visit_print_stmt(const Print& stmt)
     {
         std::any value = evaluate(stmt.getExpr());
@@ -69,6 +81,16 @@ namespace Lox
       return {};
     }
 
+    std::any Interpreter::visit_while_stmt(const While& stmt)
+    {
+        while(isTruthy(evaluate(stmt.getCondition())))
+        {
+            execute(stmt.getBody());
+        }
+
+        return {};
+    }
+
     std::any Interpreter::visit_assign_expr(const Assign& expr)
     {
       std::any value = evaluate(expr.getValue());
@@ -80,6 +102,21 @@ namespace Lox
     std::any Interpreter::visit_literal_expr(const Literal& expr)
     {
         return expr.getLiteral();
+    }
+
+    std::any Interpreter::visit_logical_expr(const Logical& expr)
+    {
+        std::any left = evaluate(expr.getLeft());
+
+        if(expr.getOp().getType() == TokenType::OR)
+        {
+            if (isTruthy(left)) return left;
+        } else
+        {
+            if (!isTruthy(left)) return left;
+        }
+
+        return evaluate(expr.getRight());
     }
 
     std::any Interpreter::visit_grouping_expr(const Grouping& expr)

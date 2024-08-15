@@ -48,6 +48,7 @@ if __name__ == "__main__":
                       ("Expr", "right", True)],
         "Grouping" : [("Expr", "expr", True)],
         "Literal"  : [("std::any", "literal", False)],
+        "Logical"  : [("Expr", "left", True), ("Token", "op", False), ("Expr", "right", True)],
         "Unary"    : [("Token", "op", False), ("Expr", "right", True)],
         "Variable" : [("Token", "name", False)]
         }

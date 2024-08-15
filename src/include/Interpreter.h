@@ -22,11 +22,14 @@ namespace Lox
     private:
         std::any visit_block_stmt(const Block& stmt) override;
         std::any visit_expression_stmt(const Expression& stmt) override;
+        std::any visit_if_stmt(const If& stmt) override;
         std::any visit_print_stmt(const Print& stmt) override;
         std::any visit_var_stmt(const Var& stmt) override;
+        std::any visit_while_stmt(const While& stmt) override;
         
         std::any visit_assign_expr(const Assign& expr) override;
         std::any visit_literal_expr(const Literal& expr) override;
+        std::any visit_logical_expr(const Logical& expr) override;
         std::any visit_grouping_expr(const Grouping& expr) override;
         std::any visit_unary_expr(const Unary& expr) override;
         std::any visit_variable_expr(const Variable& expr) override;
