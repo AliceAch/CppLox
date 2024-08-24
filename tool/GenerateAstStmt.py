@@ -14,6 +14,7 @@ def define_ast(output_dir, base_name, types, includes = []):
             for t, n , i in members)
         initialisers = ", ".join(
             "{}(std::move({}))".format(n, n)
+            if i else "{}({})".format(n, n)
             for t, n, i in members)
         member_vars = "\n    ".join(
             "std::unique_ptr<{}> {};". format(t, n)
@@ -43,11 +44,19 @@ if __name__ == "__main__":
     define_ast(
         output_dir, "Stmt",
         {
-            "Block"      : [("std::vector<std::unique_ptr<Stmt>>", "stmt", False)],
+            "Block"      : [("std::vector<std::unique_ptr<Stmt>>", "stmt", False)], 
+            #make sure you change the initializer to be std::move 
             "Expression" : [("Expr", "expr", True)],
-            "If"         : [("Expr", "condition", True), ("Stmt", "thenBranch", True), ("Stmt", "elseBranch", True)], #Remember that the elseBranch is optional
+            "Function"   : [("Token", "name", False), ("std::vector<Token>", "params", False), 
+                            ("std::vector<std::unique_ptr<Stmt>>", "body", False)], #Here too (std::move params and body)
+            #add assert(name.getType() == TokenType::IDENTIFIER) into the assertations
+            "If"         : [("Expr", "condition", True), ("Stmt", "thenBranch", True), ("Stmt", "elseBranch", True)], 
+            #Remember that the elseBranch is optional
             "Print"      : [("Expr", "expr", True)],
-            "Var"        : [("Token", "name", False), ("Expr", "initializer", True)], #make sure to remove the assertation for this member variable
+            "Return"     : [("Token", "keyword", False), ("Expr", "value", True)],
+            #value is optional
+            "Var"        : [("Token", "name", False), ("Expr", "initializer", True)], 
+            #make sure to remove the assertation for this member variable
             "While"      : [("Expr", "condition", True), ("Stmt", "body", True)]
         },
         ["Expr/Expr.h"]

@@ -13,12 +13,16 @@ namespace Lox
   Environment::Environment()
   : enclosing(nullptr) {}
 
-  Environment::Environment(Environment* enclosing)
-  : enclosing(enclosing) 
+  Environment::Environment(std::shared_ptr<Environment> enclosing)
+  : enclosing(std::move(enclosing)) 
   {
-    assert(enclosing != nullptr);
+    assert(this->enclosing != nullptr);
   }
-
+/*
+  Environment::Environment(const Environment& other)
+  : enclosing(other.enclosing)
+  {}
+*/
   const std::any& Environment::get(const Token& name) const
   {
     auto it = values.find(name.lexeme); 

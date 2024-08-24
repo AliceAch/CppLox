@@ -14,6 +14,7 @@ def define_ast(output_dir, base_name, types, includes = []):
             for t, n , i in members)
         initialisers = ", ".join(
             "{}(std::move({}))".format(n, n)
+            if i else "{}({})".format(n, n)
             for t, n, i in members)
         member_vars = "\n    ".join(
             "std::unique_ptr<{}> {};". format(t, n)
@@ -46,6 +47,8 @@ if __name__ == "__main__":
         "Assign"   : [("Token", "name", False), ("Expr", "value", True)],
         "Binary"   : [("Expr", "left", True), ("Token",  "op", False), 
                       ("Expr", "right", True)],
+        "Call"     : [("Expr", "callee", True), ("Token", "paren", False), ("std::vector<std::unique_ptr<Expr>>", "arguments", False)], 
+        #make sure you change the initializer to be std::move 
         "Grouping" : [("Expr", "expr", True)],
         "Literal"  : [("std::any", "literal", False)],
         "Logical"  : [("Expr", "left", True), ("Token", "op", False), ("Expr", "right", True)],

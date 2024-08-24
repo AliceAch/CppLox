@@ -14,6 +14,7 @@ namespace Lox
   
   struct Assign;
   struct Binary;
+  struct Call;
   struct Grouping;
   struct Literal;
   struct Logical;
@@ -28,6 +29,7 @@ namespace Lox
     
     virtual R visit_assign_expr(const Assign& expr) = 0;
     virtual R visit_binary_expr(const Binary& expr) = 0;
+    virtual R visit_call_expr(const Call& expr) = 0;
     virtual R visit_grouping_expr(const Grouping& expr) = 0;
     virtual R visit_literal_expr(const Literal& expr) = 0;
     virtual R visit_logical_expr(const Logical& expr) = 0;
@@ -45,7 +47,7 @@ namespace Lox
   struct Assign : public Expr
   {
     Assign(Token name, std::unique_ptr<Expr> value)
-        : name(std::move(name)), value(std::move(value))
+        : name(name), value(std::move(value))
     { 
        assert(this->value != nullptr);
     }
@@ -65,7 +67,7 @@ namespace Lox
   struct Binary : public Expr
   {
     Binary(std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right)
-        : left(std::move(left)), op(std::move(op)), right(std::move(right))
+        : left(std::move(left)), op(op), right(std::move(right))
     { assert(this->left != nullptr);
        
        assert(this->right != nullptr);
@@ -83,6 +85,29 @@ namespace Lox
     std::unique_ptr<Expr> left;
     Token op;
     std::unique_ptr<Expr> right;
+  };
+
+  struct Call : public Expr
+  {
+    Call(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments)
+        : callee(std::move(callee)), paren(paren), arguments(std::move(arguments))
+    { assert(this->callee != nullptr);
+       
+       
+    }
+
+    std::any accept(exprVisitor<std::any>& visitor) const
+    { 
+      return visitor.visit_call_expr(*this); 
+    }
+
+    const Expr& getCallee() const { return *callee; }
+    const Token& getParen() const { return paren; }
+    const std::vector<std::unique_ptr<Expr>>& getArguments() const { return arguments; }
+
+    std::unique_ptr<Expr> callee;
+    Token paren;
+    std::vector<std::unique_ptr<Expr>> arguments;
   };
 
   struct Grouping : public Expr
@@ -105,7 +130,7 @@ namespace Lox
   struct Literal : public Expr
   {
     Literal(std::any literal)
-        : literal(std::move(literal))
+        : literal(literal)
     { 
     }
 
@@ -122,7 +147,7 @@ namespace Lox
   struct Logical : public Expr
   {
     Logical(std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right)
-        : left(std::move(left)), op(std::move(op)), right(std::move(right))
+        : left(std::move(left)), op(op), right(std::move(right))
     { assert(this->left != nullptr);
        
        assert(this->right != nullptr);
@@ -145,7 +170,7 @@ namespace Lox
   struct Unary : public Expr
   {
     Unary(Token op, std::unique_ptr<Expr> right)
-        : op(std::move(op)), right(std::move(right))
+        : op(op), right(std::move(right))
     { 
        assert(this->right != nullptr);
     }
@@ -165,7 +190,7 @@ namespace Lox
   struct Variable : public Expr
   {
     Variable(Token name)
-        : name(std::move(name))
+        : name(name)
     { 
     }
 

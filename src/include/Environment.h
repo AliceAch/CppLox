@@ -3,6 +3,7 @@
 #include <any>
 #include <string>
 #include <unordered_map>
+#include <memory>
 
 namespace Lox
 {
@@ -12,7 +13,7 @@ namespace Lox
   {
     public:
     Environment();
-    Environment(Environment* enclosing);
+    Environment(std::shared_ptr<Environment> enclosing);
 
     const std::any& get(const Token& name) const;
 
@@ -20,7 +21,7 @@ namespace Lox
     void define(const std::string& name, const std::any& value);
     
     private:
-    Environment* enclosing;
+    std::shared_ptr<Environment> enclosing;
     std::unordered_map<std::string, std::any> values;
   };
 }

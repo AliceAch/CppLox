@@ -3,11 +3,25 @@
 #include "Interpreter.h"
 #include "Lox.h"
 
+#include <iostream>
+
 namespace Lox
 {
-    Interpreter::Interpreter(std::ostream& out) : out(out), environment(std::make_unique<Environment>()) 
-    {}
-    //Interpreter::~Interpreter = default;
+    std::any clock(Interpreter&, const std::vector<std::any>&)
+    {
+        std::time_t t = std::time(nullptr);
+        return static_cast<double>(t);
+    }
+
+    Interpreter::Interpreter(std::ostream& out) : out(out), globals(std::make_shared<Environment>()), 
+    globalEnvironment(globals.get()) 
+    {
+        globals->define("clock", std::forward<Callable>(Callable{0, &clock}));
+        environment = std::move(globals);
+    }
+
+    Interpreter::~Interpreter() = default;
+    
     void Interpreter::interpret(const std::vector<std::unique_ptr<Stmt>>& statements)
     {
         try {
@@ -21,13 +35,19 @@ namespace Lox
         }
     }
 
+    Environment& Interpreter::getGlobalsEnvironment()
+    {
+        assert(globalEnvironment);
+        return *globalEnvironment;
+    }
+
     void Interpreter::execute(const Stmt& stmt)
     {
         stmt.accept(*this);
     }
 
     void Interpreter::executeBlock(const std::vector<std::unique_ptr<Stmt>>& statements, 
-            std::unique_ptr<Environment> environment)
+            std::shared_ptr<Environment> environment)
     {
         EnterEnvironmentGuard ee{*this, std::move(environment)};
         for(const auto& statementPtr : statements) {
@@ -39,7 +59,7 @@ namespace Lox
 
     std::any Interpreter::visit_block_stmt(const Block& stmt)
     {
-        executeBlock(stmt.getStmt(), std::make_unique<Environment>(environment.get()));
+        executeBlock(stmt.getStmt(), environment);
         return {}; 
     }
 
@@ -61,12 +81,33 @@ namespace Lox
         return {};
     }
 
+    std::any Interpreter::visit_function_stmt(const Function& stmt)
+    {
+//        const Callable function(&stmt, std::make_unique<Environment>(environment.get()));
+        //static_assert(std::is_copy_constructible_v<Callable>);
+        //auto fun = Callable(&stmt, std::make_shared<Environment>(*environment));
+        auto fun = Callable(&stmt, environment);
+        environment->define(stmt.getName().lexeme, fun);
+        return {};
+    }
+
     std::any Interpreter::visit_print_stmt(const Print& stmt)
     {
         std::any value = evaluate(stmt.getExpr());
         // Using cout here because idk how to use the fmt library
-        out << stringify(value) + "\n";
+        out << stringify(value) << std::endl;
         return {};
+    }
+
+    std::any Interpreter::visit_return_stmt(const Return& stmt)
+    {
+        std::any value;
+        if(stmt.value.get() != nullptr) 
+        {
+            value = evaluate(stmt.getValue());
+        }
+
+        throw ReturnException(value);
     }
 
     std::any Interpreter::visit_var_stmt(const Var& stmt)
@@ -193,8 +234,35 @@ namespace Lox
         return std::any{};
     }
 
+    std::any Interpreter::visit_call_expr(const Call& expr)
+    {
+        std::any callee = evaluate(expr.getCallee());
+
+        std::vector<std::any> arguments;
+        for(const auto& argument : expr.getArguments())
+        {
+            arguments.push_back(evaluate(*argument));
+        }
+
+        if(callee.type() != typeid(Callable))
+        {
+            throw RuntimeError(expr.getParen(), "Can only call functions and classes.");
+        }
+
+        auto function = std::any_cast<Callable>(callee);
+
+        if(arguments.size() != function.getArity()) 
+        {
+            throw RuntimeError(expr.getParen(), fmt::format("Expected {} arguments, but got {}.",
+                function.getArity(), arguments.size()));
+        }
+
+        return function.call(*this, arguments);
+    }
+
     std::string Interpreter::stringify(const std::any& object)
     {
+        //Add support for print functions
         if(!object.has_value())
             return "nil";
         if(object.type() == typeid(bool))
@@ -208,7 +276,8 @@ namespace Lox
                 return std::to_string(n);
             }
         }
-
+        if(object.type() == typeid(Callable))
+            return fmt::format("<fn {}>", std::any_cast<Callable>(object).getDeclaration()->getName().lexeme);
         if(object.type() == typeid(std::string)) 
         {
             return std::any_cast<std::string>(object);
@@ -279,7 +348,7 @@ namespace Lox
     }
 
     Interpreter::EnterEnvironmentGuard::EnterEnvironmentGuard(Interpreter& i,
-          std::unique_ptr<Environment> env)
+          std::shared_ptr<Environment> env)
     : i(i)
     {
       previous = std::move(i.environment);

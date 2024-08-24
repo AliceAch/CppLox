@@ -3,7 +3,6 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-// so this interpreter will only work on my system
 #include <fmt/core.h>
 #include "Lox.h"
 #include "Scanner.h"

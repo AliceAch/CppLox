@@ -1,5 +1,8 @@
 add_library(lox)
 
+set(GCC_DEBUG_COMPILE_FLAG "-g")
+add_definitions(${GCC_DEBUG_COMPILE_FLAG})
+
 target_include_directories(lox
     PUBLIC
         ${lox_SOURCE_DIR}/src/include
@@ -18,6 +21,7 @@ target_sources(lox
         Scanner.cpp
         Token.cpp
         AstPrinter.cpp
+        Callable.cpp
         Parser.cpp
         Interpreter.cpp
         Environment.cpp

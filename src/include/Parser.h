@@ -29,6 +29,8 @@ namespace Lox
         void synchronize();
         Token consume(TokenType type, const char* message);
 
+        std::unique_ptr<Expr> finishCall(std::unique_ptr<Expr>& callee);
+
         class ParseError : public std::runtime_error {
         public:
             ParseError() : std::runtime_error("") {}    
@@ -41,7 +43,9 @@ namespace Lox
         std::unique_ptr<Stmt> forStatement();
         std::unique_ptr<Stmt> ifStatement();
         std::unique_ptr<Stmt> printStatement();
+        std::unique_ptr<Stmt> returnStatement();
         std::unique_ptr<Stmt> exprStatement();
+        std::unique_ptr<Stmt> function(std::string kind);
         std::vector<std::unique_ptr<Stmt>> block();
         std::unique_ptr<Stmt> varDeclaration();
         std::unique_ptr<Stmt> whileStatement();
@@ -55,6 +59,7 @@ namespace Lox
         std::unique_ptr<Expr> term();
         std::unique_ptr<Expr> factor();
         std::unique_ptr<Expr> unary();
+        std::unique_ptr<Expr> call();
         std::unique_ptr<Expr> primary();
 
         std::vector<Token> tokens;
