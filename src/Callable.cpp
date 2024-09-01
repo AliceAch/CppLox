@@ -10,8 +10,8 @@ namespace Lox
     Callable::Callable(int arity, FuncType f) : arity(arity), f(f), declaration(nullptr)
     {}
 
-    Callable::Callable(const Function* declaration, std::shared_ptr<Environment> closure) : 
-    declaration(declaration), closure(std::move(closure))
+    Callable::Callable(std::shared_ptr<const Function> declaration, std::shared_ptr<Environment> closure) : 
+    declaration(declaration), closure(closure)
     {
         assert(declaration);
         arity = static_cast<int>(declaration->getParams().size());
@@ -43,7 +43,7 @@ namespace Lox
         }
 
         try {
-            interpreter.executeBlock(declaration->getBody(), std::move(env));
+            interpreter.executeBlock(declaration->getBody(), env);
         } catch(const ReturnException& v)
         {
             return v.getValue();

@@ -4,11 +4,11 @@
 #include "AstPrinter.h"
 
 namespace Lox { 
-  std::any AstPrinter::visit_binary_expr(const Binary& expr)
+  std::any AstPrinter::visit_binary_expr(std::shared_ptr<const Binary> expr)
   {
     return paranthesise(expr.op.lexeme, {expr.left.get(), expr.right.get()});
   }
-  std::any AstPrinter::visit_literal_expr(const Literal& expr)
+  std::any AstPrinter::visit_literal_expr(std::shared_ptr<const Literal> expr)
   {
     std::stringstream stream("");
     // Fix std::any conversion errors here
@@ -33,11 +33,11 @@ namespace Lox {
 
     return stream.str();
   }
-  std::any AstPrinter::visit_grouping_expr(const Grouping& expr)
+  std::any AstPrinter::visit_grouping_expr(std::shared_ptr<const Grouping> expr)
   {
     return paranthesise("group", {expr.expr.get()});
   }
-  std::any AstPrinter::visit_unary_expr(const Unary& expr)
+  std::any AstPrinter::visit_unary_expr(std::shared_ptr<const Unary> expr)
   {
     return paranthesise(expr.op.lexeme, {expr.right.get()});
   }
@@ -61,7 +61,7 @@ namespace Lox {
     return stream.str();
   }
 
-  std::string AstPrinter::print(const Expr& expr)
+  std::string AstPrinter::print(std::shared_ptr<const Expr> expr)
   {
     stream_ << std::any_cast<std::string>(expr.accept(*this));
     //stream << "this point";

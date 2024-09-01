@@ -27,14 +27,14 @@ namespace Lox
   public:
     ~exprVisitor() = default;
     
-    virtual R visit_assign_expr(const Assign& expr) = 0;
-    virtual R visit_binary_expr(const Binary& expr) = 0;
-    virtual R visit_call_expr(const Call& expr) = 0;
-    virtual R visit_grouping_expr(const Grouping& expr) = 0;
-    virtual R visit_literal_expr(const Literal& expr) = 0;
-    virtual R visit_logical_expr(const Logical& expr) = 0;
-    virtual R visit_unary_expr(const Unary& expr) = 0;
-    virtual R visit_variable_expr(const Variable& expr) = 0;
+    virtual R visit_assign_expr(std::shared_ptr<const Assign> expr) = 0;
+    virtual R visit_binary_expr(std::shared_ptr<const Binary> expr) = 0;
+    virtual R visit_call_expr(std::shared_ptr<const Call> expr) = 0;
+    virtual R visit_grouping_expr(std::shared_ptr<const Grouping> expr) = 0;
+    virtual R visit_literal_expr(std::shared_ptr<const Literal> expr) = 0;
+    virtual R visit_logical_expr(std::shared_ptr<const Logical> expr) = 0;
+    virtual R visit_unary_expr(std::shared_ptr<const Unary> expr) = 0;
+    virtual R visit_variable_expr(std::shared_ptr<const Variable> expr) = 0;
   };
 
   struct Expr
@@ -44,9 +44,9 @@ namespace Lox
     virtual std::any accept(exprVisitor<std::any>& visitor) const = 0;
   };
 
-  struct Assign : public Expr
+  struct Assign : public Expr, std::enable_shared_from_this<Assign>
   {
-    Assign(Token name, std::unique_ptr<Expr> value)
+    Assign(Token name, std::shared_ptr<const Expr> value)
         : name(name), value(std::move(value))
     { 
        assert(this->value != nullptr);
@@ -54,19 +54,19 @@ namespace Lox
 
     std::any accept(exprVisitor<std::any>& visitor) const
     { 
-      return visitor.visit_assign_expr(*this); 
+      return visitor.visit_assign_expr(shared_from_this()); 
     }
 
     const Token& getName() const { return name; }
     const Expr& getValue() const { return *value; }
 
     Token name;
-    std::unique_ptr<Expr> value;
+    std::shared_ptr<const Expr> value;
   };
 
-  struct Binary : public Expr
+  struct Binary : public Expr, std::enable_shared_from_this<Binary>
   {
-    Binary(std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right)
+    Binary(std::shared_ptr<const Expr> left, Token op, std::shared_ptr<const Expr> right)
         : left(std::move(left)), op(op), right(std::move(right))
     { assert(this->left != nullptr);
        
@@ -75,21 +75,21 @@ namespace Lox
 
     std::any accept(exprVisitor<std::any>& visitor) const
     { 
-      return visitor.visit_binary_expr(*this); 
+      return visitor.visit_binary_expr(shared_from_this()); 
     }
 
     const Expr& getLeft() const { return *left; }
     const Token& getOp() const { return op; }
     const Expr& getRight() const { return *right; }
 
-    std::unique_ptr<Expr> left;
+    std::shared_ptr<const Expr> left;
     Token op;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<const Expr> right;
   };
 
-  struct Call : public Expr
+  struct Call : public Expr, std::enable_shared_from_this<Call>
   {
-    Call(std::unique_ptr<Expr> callee, Token paren, std::vector<std::unique_ptr<Expr>> arguments)
+    Call(std::shared_ptr<const Expr> callee, Token paren, std::vector<std::shared_ptr<const Expr>> arguments)
         : callee(std::move(callee)), paren(paren), arguments(std::move(arguments))
     { assert(this->callee != nullptr);
        
@@ -98,36 +98,36 @@ namespace Lox
 
     std::any accept(exprVisitor<std::any>& visitor) const
     { 
-      return visitor.visit_call_expr(*this); 
+      return visitor.visit_call_expr(shared_from_this()); 
     }
 
     const Expr& getCallee() const { return *callee; }
     const Token& getParen() const { return paren; }
-    const std::vector<std::unique_ptr<Expr>>& getArguments() const { return arguments; }
+    const std::vector<std::shared_ptr<const Expr>>& getArguments() const { return arguments; }
 
-    std::unique_ptr<Expr> callee;
+    std::shared_ptr<const Expr> callee;
     Token paren;
-    std::vector<std::unique_ptr<Expr>> arguments;
+    std::vector<std::shared_ptr<const Expr>> arguments;
   };
 
-  struct Grouping : public Expr
+  struct Grouping : public Expr, std::enable_shared_from_this<Grouping>
   {
-    Grouping(std::unique_ptr<Expr> expr)
+    Grouping(std::shared_ptr<const Expr> expr)
         : expr(std::move(expr))
     { assert(this->expr != nullptr);
     }
 
     std::any accept(exprVisitor<std::any>& visitor) const
     { 
-      return visitor.visit_grouping_expr(*this); 
+      return visitor.visit_grouping_expr(shared_from_this()); 
     }
 
     const Expr& getExpr() const { return *expr; }
 
-    std::unique_ptr<Expr> expr;
+    std::shared_ptr<const Expr> expr;
   };
 
-  struct Literal : public Expr
+  struct Literal : public Expr, std::enable_shared_from_this<Literal>
   {
     Literal(std::any literal)
         : literal(literal)
@@ -136,7 +136,7 @@ namespace Lox
 
     std::any accept(exprVisitor<std::any>& visitor) const
     { 
-      return visitor.visit_literal_expr(*this); 
+      return visitor.visit_literal_expr(shared_from_this()); 
     }
 
     const std::any& getLiteral() const { return literal; }
@@ -144,9 +144,9 @@ namespace Lox
     std::any literal;
   };
 
-  struct Logical : public Expr
+  struct Logical : public Expr, std::enable_shared_from_this<Logical>
   {
-    Logical(std::unique_ptr<Expr> left, Token op, std::unique_ptr<Expr> right)
+    Logical(std::shared_ptr<const Expr> left, Token op, std::shared_ptr<const Expr> right)
         : left(std::move(left)), op(op), right(std::move(right))
     { assert(this->left != nullptr);
        
@@ -155,21 +155,21 @@ namespace Lox
 
     std::any accept(exprVisitor<std::any>& visitor) const
     { 
-      return visitor.visit_logical_expr(*this); 
+      return visitor.visit_logical_expr(shared_from_this()); 
     }
 
     const Expr& getLeft() const { return *left; }
     const Token& getOp() const { return op; }
     const Expr& getRight() const { return *right; }
 
-    std::unique_ptr<Expr> left;
+    std::shared_ptr<const Expr> left;
     Token op;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<const Expr> right;
   };
 
-  struct Unary : public Expr
+  struct Unary : public Expr, std::enable_shared_from_this<Unary>
   {
-    Unary(Token op, std::unique_ptr<Expr> right)
+    Unary(Token op, std::shared_ptr<const Expr> right)
         : op(op), right(std::move(right))
     { 
        assert(this->right != nullptr);
@@ -177,17 +177,17 @@ namespace Lox
 
     std::any accept(exprVisitor<std::any>& visitor) const
     { 
-      return visitor.visit_unary_expr(*this); 
+      return visitor.visit_unary_expr(shared_from_this()); 
     }
 
     const Token& getOp() const { return op; }
     const Expr& getRight() const { return *right; }
 
     Token op;
-    std::unique_ptr<Expr> right;
+    std::shared_ptr<const Expr> right;
   };
 
-  struct Variable : public Expr
+  struct Variable : public Expr, std::enable_shared_from_this<Variable>
   {
     Variable(Token name)
         : name(name)
@@ -196,7 +196,7 @@ namespace Lox
 
     std::any accept(exprVisitor<std::any>& visitor) const
     { 
-      return visitor.visit_variable_expr(*this); 
+      return visitor.visit_variable_expr(shared_from_this()); 
     }
 
     const Token& getName() const { return name; }

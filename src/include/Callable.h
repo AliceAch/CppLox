@@ -17,19 +17,19 @@ namespace Lox
     {
     public:
         Callable(int arity, FuncType f);
-        Callable(const Function* declaration, std::shared_ptr<Environment> closure);
+        Callable(std::shared_ptr<const Function> declaration, std::shared_ptr<Environment> closure);
 
         //Callable(const Callable& other);
 
         std::any call(Interpreter& interpreter, const std::vector<std::any> arguments) const;
 
         int getArity() const {return arity;}
-        const Function* getDeclaration() const {return declaration;}
+        const std::shared_ptr<const Function> getDeclaration() const {return declaration;}
     private:
         int arity;
         FuncType f;
 
-        const Function* declaration;
+        std::shared_ptr<const Function> declaration;
         std::shared_ptr<Environment> closure;
     };
 

@@ -20,11 +20,11 @@ target_sources(lox
         Lox.cpp
         Scanner.cpp
         Token.cpp
-        AstPrinter.cpp
         Callable.cpp
         Parser.cpp
         Interpreter.cpp
         Environment.cpp
+        Resolver.cpp
 )
 
 add_executable(lox_repl)

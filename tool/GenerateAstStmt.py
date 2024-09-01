@@ -9,7 +9,7 @@ def define_ast(output_dir, base_name, types, includes = []):
 
     for name, members in type_items:
         arglist = ", ".join(
-            "std::unique_ptr<{}> {}".format(t, n)
+            "std::shared_ptr<const {}> {}".format(t, n)
             if i else "{} {}".format(t, n)
             for t, n , i in members)
         initialisers = ", ".join(
@@ -17,7 +17,7 @@ def define_ast(output_dir, base_name, types, includes = []):
             if i else "{}({})".format(n, n)
             for t, n, i in members)
         member_vars = "\n    ".join(
-            "std::unique_ptr<{}> {};". format(t, n)
+            "std::shared_ptr<const {}> {};". format(t, n)
             if i else "{} {};".format(t, n)
             for t, n, i in members)
         asserts = "\n       ".join(
@@ -44,11 +44,11 @@ if __name__ == "__main__":
     define_ast(
         output_dir, "Stmt",
         {
-            "Block"      : [("std::vector<std::unique_ptr<Stmt>>", "stmt", False)], 
+            "Block"      : [("std::vector<std::shared_ptr<const Stmt>>", "stmt", False)], 
             #make sure you change the initializer to be std::move 
             "Expression" : [("Expr", "expr", True)],
             "Function"   : [("Token", "name", False), ("std::vector<Token>", "params", False), 
-                            ("std::vector<std::unique_ptr<Stmt>>", "body", False)], #Here too (std::move params and body)
+                            ("std::vector<std::shared_ptr<const Stmt>>", "body", False)], #Here too (std::move params and body)
             #add assert(name.getType() == TokenType::IDENTIFIER) into the assertations
             "If"         : [("Expr", "condition", True), ("Stmt", "thenBranch", True), ("Stmt", "elseBranch", True)], 
             #Remember that the elseBranch is optional

@@ -17,18 +17,18 @@ namespace Lox
     globalEnvironment(globals.get()) 
     {
         globals->define("clock", std::forward<Callable>(Callable{0, &clock}));
-        environment = std::move(globals);
+        environment = globals;
     }
 
     Interpreter::~Interpreter() = default;
     
-    void Interpreter::interpret(const std::vector<std::unique_ptr<Stmt>>& statements)
+    void Interpreter::interpret(const std::vector<std::shared_ptr<const Stmt>>& statements)
     {
         try {
             for(const auto& ptr : statements)
             {
                 assert(ptr != nullptr);
-                execute(*ptr);
+                execute(ptr);
             }
         } catch (RuntimeError error) {
             Lox::ReportRuntimeError(error);
@@ -41,115 +41,127 @@ namespace Lox
         return *globalEnvironment;
     }
 
-    void Interpreter::execute(const Stmt& stmt)
+    void Interpreter::execute(std::shared_ptr<const Stmt> stmt)
     {
-        stmt.accept(*this);
+        stmt->accept(*this);
     }
 
-    void Interpreter::executeBlock(const std::vector<std::unique_ptr<Stmt>>& statements, 
-            std::shared_ptr<Environment> environment)
+    void Interpreter::executeBlock(const std::vector<std::shared_ptr<const Stmt>>& statements, 
+            std::shared_ptr<Environment> Lenvironment)
     {
-        EnterEnvironmentGuard ee{*this, std::move(environment)};
+        EnterEnvironmentGuard ee{*this, Lenvironment};
         for(const auto& statementPtr : statements) {
           assert(statementPtr != nullptr);
-          execute(*statementPtr);
+          execute(statementPtr);
         }
     }
 
-
-    std::any Interpreter::visit_block_stmt(const Block& stmt)
+    void Interpreter::resolve(const std::shared_ptr<const Expr>& expr, int depth)
     {
-        executeBlock(stmt.getStmt(), environment);
+        locals[expr] = depth;
+    }
+
+    std::any Interpreter::visit_block_stmt(std::shared_ptr<const Block> stmt)
+    {
+        auto env = std::make_shared<Environment>(this->environment);
+        executeBlock(stmt->getStmt(), env);
         return {}; 
     }
 
-    std::any Interpreter::visit_expression_stmt(const Expression& stmt)
+    std::any Interpreter::visit_expression_stmt(std::shared_ptr<const Expression> stmt)
     {
-        evaluate(stmt.getExpr());
+        evaluate(stmt->expr);
         return {};
     }
 
-    std::any Interpreter::visit_if_stmt(const If& stmt)
+    std::any Interpreter::visit_if_stmt(std::shared_ptr<const If> stmt)
     {
-        if(isTruthy(evaluate(stmt.getCondition())))
+        if(isTruthy(evaluate(stmt->condition)))
         {
-            execute(stmt.getThenbranch());
-        } else if (stmt.elseBranch != nullptr)
+            execute(stmt->thenBranch);
+        } else if (stmt->elseBranch != nullptr)
         {
-            execute(stmt.getElsebranch());
+            execute(stmt->elseBranch);
         }
         return {};
     }
 
-    std::any Interpreter::visit_function_stmt(const Function& stmt)
+    std::any Interpreter::visit_function_stmt(std::shared_ptr<const Function> stmt)
     {
 //        const Callable function(&stmt, std::make_unique<Environment>(environment.get()));
         //static_assert(std::is_copy_constructible_v<Callable>);
         //auto fun = Callable(&stmt, std::make_shared<Environment>(*environment));
-        auto fun = Callable(&stmt, environment);
-        environment->define(stmt.getName().lexeme, fun);
+        auto fun = Callable(stmt, environment);
+        environment->define(stmt->getName().lexeme, fun);
         return {};
     }
 
-    std::any Interpreter::visit_print_stmt(const Print& stmt)
+    std::any Interpreter::visit_print_stmt(std::shared_ptr<const Print> stmt)
     {
-        std::any value = evaluate(stmt.getExpr());
+        std::any value = evaluate(stmt->expr);
         // Using cout here because idk how to use the fmt library
         out << stringify(value) << std::endl;
         return {};
     }
 
-    std::any Interpreter::visit_return_stmt(const Return& stmt)
+    std::any Interpreter::visit_return_stmt(std::shared_ptr<const Return> stmt)
     {
         std::any value;
-        if(stmt.value.get() != nullptr) 
+        if(stmt->value.get() != nullptr) 
         {
-            value = evaluate(stmt.getValue());
+            value = evaluate(stmt->value);
         }
 
         throw ReturnException(value);
     }
 
-    std::any Interpreter::visit_var_stmt(const Var& stmt)
+    std::any Interpreter::visit_var_stmt(std::shared_ptr<const Var> stmt)
     {
       std::any value;
-      if (stmt.initializer != nullptr)
+      if (stmt->initializer != nullptr)
       {
-        value = evaluate(stmt.getInitializer());
+        value = evaluate(stmt->initializer);
       }
 
-      environment->define(stmt.getName().lexeme, value);
+      environment->define(stmt->getName().lexeme, value);
       return {};
     }
 
-    std::any Interpreter::visit_while_stmt(const While& stmt)
+    std::any Interpreter::visit_while_stmt(std::shared_ptr<const While> stmt)
     {
-        while(isTruthy(evaluate(stmt.getCondition())))
+        while(isTruthy(evaluate(stmt->condition)))
         {
-            execute(stmt.getBody());
+            execute(stmt->body);
         }
 
         return {};
     }
 
-    std::any Interpreter::visit_assign_expr(const Assign& expr)
+    std::any Interpreter::visit_assign_expr(std::shared_ptr<const Assign> expr)
     {
-      std::any value = evaluate(expr.getValue());
+      std::any value = evaluate(expr->value);
       assert(environment != nullptr);
-      environment->assign(expr.getName(), value);
+      if(locals.find(expr) != locals.end())
+      {
+        int distance = locals.at(expr);
+        environment->assignAt(distance, expr->name, value);
+      } else
+      {
+        globals->assign(expr->getName(), value);
+      }
       return value;
     }
 
-    std::any Interpreter::visit_literal_expr(const Literal& expr)
+    std::any Interpreter::visit_literal_expr(std::shared_ptr<const Literal> expr)
     {
-        return expr.getLiteral();
+        return expr->getLiteral();
     }
 
-    std::any Interpreter::visit_logical_expr(const Logical& expr)
+    std::any Interpreter::visit_logical_expr(std::shared_ptr<const Logical> expr)
     {
-        std::any left = evaluate(expr.getLeft());
+        std::any left = evaluate(expr->left);
 
-        if(expr.getOp().getType() == TokenType::OR)
+        if(expr->getOp().getType() == TokenType::OR)
         {
             if (isTruthy(left)) return left;
         } else
@@ -157,22 +169,22 @@ namespace Lox
             if (!isTruthy(left)) return left;
         }
 
-        return evaluate(expr.getRight());
+        return evaluate(expr->right);
     }
 
-    std::any Interpreter::visit_grouping_expr(const Grouping& expr)
+    std::any Interpreter::visit_grouping_expr(std::shared_ptr<const Grouping> expr)
     {
-        return evaluate(expr.getExpr());
+        return evaluate(expr->expr);
     }
 
-    std::any Interpreter::visit_unary_expr(const Unary& expr)
+    std::any Interpreter::visit_unary_expr(std::shared_ptr<const Unary> expr)
     {
-        const std::any right = evaluate(expr.getRight());
+        const std::any right = evaluate(expr->right);
 
-        switch(expr.getOp().getType())
+        switch(expr->getOp().getType())
         {
             case TokenType::MINUS:
-                checkNumberOperand(expr.getOp(), right);
+                checkNumberOperand(expr->getOp(), right);
                 return -(std::any_cast<double>(right));
             case TokenType::BANG:
                 return !isTruthy(right);
@@ -182,37 +194,50 @@ namespace Lox
         }
     }
 
-    std::any Interpreter::visit_variable_expr(const Variable& expr)
+    std::any Interpreter::visit_variable_expr(std::shared_ptr<const Variable> expr)
     {
       assert(environment != nullptr);
-      return environment->get(expr.getName());
+      return lookUpVariable(expr->name, expr);
     }
 
-    std::any Interpreter::visit_binary_expr(const Binary& expr)
+    std::any Interpreter::lookUpVariable(const Token& name, std::shared_ptr<const Expr> expr)
     {
-        const std::any left = evaluate(expr.getLeft());
-        const std::any right = evaluate(expr.getRight());
+        if(locals.find(expr) != locals.end())
+        {
+            int dist = locals[expr];
+            return environment->getAt(dist, name.lexeme);
+        }
+        else
+        {
+            return globals->get(name);
+        }
+    }
 
-        switch(expr.getOp().getType())
+    std::any Interpreter::visit_binary_expr(std::shared_ptr<const Binary> expr)
+    {
+        const std::any left = evaluate(expr->left);
+        const std::any right = evaluate(expr->right);
+
+        switch(expr->getOp().getType())
         {   
             case TokenType::GREATER:
-                checkNumberOperands(expr.getOp(), left, right);
+                checkNumberOperands(expr->getOp(), left, right);
                 return std::any_cast<double>(left) > std::any_cast<double>(right);
             case TokenType::GREATER_EQUAL:
-                checkNumberOperands(expr.getOp(), left, right);
+                checkNumberOperands(expr->getOp(), left, right);
                 return std::any_cast<double>(left) >= std::any_cast<double>(right);
             case TokenType::LESS:
-                checkNumberOperands(expr.getOp(), left, right);
+                checkNumberOperands(expr->getOp(), left, right);
                 return std::any_cast<double>(left) < std::any_cast<double>(right);
             case TokenType::LESS_EQUAL:
-                checkNumberOperands(expr.getOp(), left, right);
+                checkNumberOperands(expr->getOp(), left, right);
                 return std::any_cast<double>(left) <= std::any_cast<double>(right);
             case TokenType::BANG_EQUAL:
                 return !isEqual(left, right);
             case TokenType::EQUAL_EQUAL:
                 return isEqual(left, right);
             case TokenType::MINUS:
-                checkNumberOperands(expr.getOp(), left, right);
+                checkNumberOperands(expr->getOp(), left, right);
                 return std::any_cast<double>(left) - std::any_cast<double>(right);
             case TokenType::PLUS:
                 if(left.type() == typeid(double) && right.type() == typeid(double))
@@ -221,39 +246,39 @@ namespace Lox
                 if(left.type() == typeid(std::string) && right.type() == typeid(std::string))
                     return std::any_cast<std::string>(left) + std::any_cast<std::string>(right);
 
-                throw RuntimeError(expr.getOp(),
+                throw RuntimeError(expr->getOp(),
                     "Operands must be two numbers or two strings.");  
             case TokenType::SLASH:
-                checkNumberOperands(expr.getOp(), left, right);
+                checkNumberOperands(expr->getOp(), left, right);
                 return std::any_cast<double>(left) / std::any_cast<double>(right);
             case TokenType::STAR:
-                checkNumberOperands(expr.getOp(), left, right);
+                checkNumberOperands(expr->getOp(), left, right);
                 return std::any_cast<double>(left) * std::any_cast<double>(right); 
         }
 
         return std::any{};
     }
 
-    std::any Interpreter::visit_call_expr(const Call& expr)
+    std::any Interpreter::visit_call_expr(std::shared_ptr<const Call> expr)
     {
-        std::any callee = evaluate(expr.getCallee());
+        std::any callee = evaluate(expr->callee);
 
         std::vector<std::any> arguments;
-        for(const auto& argument : expr.getArguments())
+        for(const auto& argument : expr->getArguments())
         {
-            arguments.push_back(evaluate(*argument));
+            arguments.push_back(evaluate(argument));
         }
 
         if(callee.type() != typeid(Callable))
         {
-            throw RuntimeError(expr.getParen(), "Can only call functions and classes.");
+            throw RuntimeError(expr->getParen(), "Can only call functions and classes.");
         }
 
         auto function = std::any_cast<Callable>(callee);
 
         if(arguments.size() != function.getArity()) 
         {
-            throw RuntimeError(expr.getParen(), fmt::format("Expected {} arguments, but got {}.",
+            throw RuntimeError(expr->getParen(), fmt::format("Expected {} arguments, but got {}.",
                 function.getArity(), arguments.size()));
         }
 
@@ -286,9 +311,9 @@ namespace Lox
         return "";
     } 
 
-    std::any Interpreter::evaluate(const Expr& expr)
+    std::any Interpreter::evaluate(std::shared_ptr<const Expr> expr)
     {
-        return expr.accept(*this);
+        return expr->accept(*this);
     }
 
     bool Interpreter::isTruthy(const std::any& object) const
@@ -351,13 +376,13 @@ namespace Lox
           std::shared_ptr<Environment> env)
     : i(i)
     {
-      previous = std::move(i.environment);
+      previous = i.environment;
       i.environment = std::move(env);
     }
 
     Interpreter::EnterEnvironmentGuard::~EnterEnvironmentGuard()
     {
-      i.environment = std::move(previous);
+      i.environment = previous;
     }
 
 

@@ -8,6 +8,7 @@
 #include "Scanner.h"
 #include "Parser.h"
 #include "Interpreter.h"
+#include "Resolver.h"
 #include "AstPrinter.h"
 
 #define LOX_VERSION "0.0.1"
@@ -21,9 +22,16 @@ void run(const std::string& source)
 {
   Lox::Scanner scanner(source);
   Lox::Parser parser(scanner.scanTokens());
-  std::vector<std::unique_ptr<Lox::Stmt>> statements = parser.parse();
+  std::vector<std::shared_ptr<const Lox::Stmt>> statements = parser.parse();
 
   if (Lox::Lox::HadError) {
+    return;
+  }
+  Lox::Resolver resolver(interpreter);
+  resolver.resolve(statements);
+
+  if (Lox::Lox::HadError)
+  {
     return;
   }
   /*
@@ -91,11 +99,11 @@ int main(int args, char* argv[])
 int main(int args, char* argv[])
 {
   Lox::Expr* expression = new Lox::Binary(
-      std::make_unique<Lox::Unary>(
+      std::make_shared<const Lox::Unary>(
         Lox::Token(Lox::TokenType::MINUS, "-", NULL, 1),
-        std::make_unique<Lox::Literal>(123)),
+        std::make_shared<const Lox::Literal>(123)),
       Lox::Token(Lox::TokenType::STAR, "*", NULL, 1),
-      std::make_unique<Lox::Grouping>(std::make_unique<Lox::Literal>(45.67)));
+      std::make_shared<const Lox::Grouping>(std::make_shared<const Lox::Literal>(45.67)));
   Lox::AstPrinter printer;
   std::cout << printer.print(*expression) << std::endl;
 }

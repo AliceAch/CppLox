@@ -12,12 +12,12 @@ namespace Lox
     public:
       //AstPrinter();
 
-      std::any visit_binary_expr(const Binary& expr) override;
-      std::any visit_grouping_expr(const Grouping& expr) override;
-      std::any visit_literal_expr(const Literal& expr) override;
-      std::any visit_unary_expr(const Unary& expr) override;
+      std::any visit_binary_expr(std::shared_ptr<const Binary> expr) override;
+      std::any visit_grouping_expr(std::shared_ptr<const Grouping> expr) override;
+      std::any visit_literal_expr(std::shared_ptr<const Literal> expr) override;
+      std::any visit_unary_expr(std::shared_ptr<const Unary> expr) override;
 
-      std::string print(const Expr& expr);
+      std::string print(std::shared_ptr<const Expr> expr);
 
     private:
       std::string paranthesise(const std::string& name, 
