@@ -13,23 +13,36 @@ namespace Lox
 
     using FuncType = std::function<std::any(Interpreter&, const std::vector<std::any>&)>;
 
-    class Callable
+    class Callable 
     {
     public:
-        Callable(int arity, FuncType f);
-        Callable(std::shared_ptr<const Function> declaration, std::shared_ptr<Environment> closure);
+        //Callable(int arity, FuncType f);
+        //Callable(std::shared_ptr<Function> declaration, std::shared_ptr<Environment> closure);
 
         //Callable(const Callable& other);
 
-        std::any call(Interpreter& interpreter, const std::vector<std::any> arguments) const;
+        virtual std::any call(Interpreter& interpreter, const std::vector<std::any>& arguments) = 0;
 
-        int getArity() const {return arity;}
-        const std::shared_ptr<const Function> getDeclaration() const {return declaration;}
-    private:
-        int arity;
+        virtual int getArity() const = 0;
+        //const std::shared_ptr<Function> getDeclaration() const {return declaration;}
+        virtual ~Callable() = default;
+    };
+
+    class LoxFunction : public Callable
+    {
+    public:
         FuncType f;
+        int arity = 0;
 
-        std::shared_ptr<const Function> declaration;
+        LoxFunction(int arity, FuncType f);
+        LoxFunction(std::shared_ptr<Function> declaration, std::shared_ptr<Environment> closure);
+        std::any call(Interpreter& i, const std::vector<std::any>& arguments) override;
+        int getArity() const override;
+        const std::shared_ptr<Function> getDeclaration() const {return declaration;}
+        
+
+    private:
+        std::shared_ptr<Function> declaration;
         std::shared_ptr<Environment> closure;
     };
 

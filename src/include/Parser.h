@@ -13,7 +13,7 @@ namespace Lox
     {
         public:
         Parser(std::vector<Token> tokens);
-        std::vector<std::shared_ptr<const Stmt>> parse();
+        std::vector<std::shared_ptr<Stmt>> parse();
 
         private:
         bool check(TokenType type) const;
@@ -29,7 +29,7 @@ namespace Lox
         void synchronize();
         Token consume(TokenType type, const char* message);
 
-        std::shared_ptr<const Expr> finishCall(std::shared_ptr<const Expr>& callee);
+        std::shared_ptr<Expr> finishCall(std::shared_ptr<Expr>& callee);
 
         class ParseError : public std::runtime_error {
         public:
@@ -38,29 +38,30 @@ namespace Lox
 
         ParseError error(Token token, const char* message) const;
         
-        std::shared_ptr<const Stmt> declaration();
-        std::shared_ptr<const Stmt> statement();
-        std::shared_ptr<const Stmt> forStatement();
-        std::shared_ptr<const Stmt> ifStatement();
-        std::shared_ptr<const Stmt> printStatement();
-        std::shared_ptr<const Stmt> returnStatement();
-        std::shared_ptr<const Stmt> exprStatement();
-        std::shared_ptr<const Stmt> function(std::string kind);
-        std::vector<std::shared_ptr<const Stmt>> block();
-        std::shared_ptr<const Stmt> varDeclaration();
-        std::shared_ptr<const Stmt> whileStatement();
+        std::shared_ptr<Stmt> declaration();
+        std::shared_ptr<Stmt> classDeclaration();
+        std::shared_ptr<Stmt> statement();
+        std::shared_ptr<Stmt> forStatement();
+        std::shared_ptr<Stmt> ifStatement();
+        std::shared_ptr<Stmt> printStatement();
+        std::shared_ptr<Stmt> returnStatement();
+        std::shared_ptr<Stmt> exprStatement();
+        std::shared_ptr<Function> function(std::string kind);
+        std::vector<std::shared_ptr<Stmt>> block();
+        std::shared_ptr<Stmt> varDeclaration();
+        std::shared_ptr<Stmt> whileStatement();
 
-        std::shared_ptr<const Expr> expression();
-        std::shared_ptr<const Expr> assignment();
-        std::shared_ptr<const Expr> logicalOr();
-        std::shared_ptr<const Expr> logicalAnd();
-        std::shared_ptr<const Expr> equality();
-        std::shared_ptr<const Expr> comparison();    
-        std::shared_ptr<const Expr> term();
-        std::shared_ptr<const Expr> factor();
-        std::shared_ptr<const Expr> unary();
-        std::shared_ptr<const Expr> call();
-        std::shared_ptr<const Expr> primary();
+        std::shared_ptr<Expr> expression();
+        std::shared_ptr<Expr> assignment();
+        std::shared_ptr<Expr> logicalOr();
+        std::shared_ptr<Expr> logicalAnd();
+        std::shared_ptr<Expr> equality();
+        std::shared_ptr<Expr> comparison();    
+        std::shared_ptr<Expr> term();
+        std::shared_ptr<Expr> factor();
+        std::shared_ptr<Expr> unary();
+        std::shared_ptr<Expr> call();
+        std::shared_ptr<Expr> primary();
 
         std::vector<Token> tokens;
         int current{0};

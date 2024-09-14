@@ -7,14 +7,12 @@
 
 namespace Lox
 {
-    Callable::Callable(int arity, FuncType f) : arity(arity), f(f), declaration(nullptr)
+    LoxFunction::LoxFunction(int arity, FuncType f) : arity(arity), f(f), declaration(nullptr)
     {}
 
-    Callable::Callable(std::shared_ptr<const Function> declaration, std::shared_ptr<Environment> closure) : 
-    declaration(declaration), closure(closure)
+    LoxFunction::LoxFunction(std::shared_ptr<Function> declaration, std::shared_ptr<Environment> closure) : 
+    declaration(std::move(declaration)), closure(std::move(closure))
     {
-        assert(declaration);
-        arity = static_cast<int>(declaration->getParams().size());
     }
 /*
     Callable::Callable(const Callable& other)
@@ -24,7 +22,7 @@ namespace Lox
         closure(std::make_shared<Environment>(*other.closure))
     {}
 */
-    std::any Callable::call(Interpreter& interpreter, const std::vector<std::any> arguments) const
+    std::any LoxFunction::call(Interpreter& interpreter, const std::vector<std::any>& arguments)
     {
         if (!declaration) 
         {
@@ -50,5 +48,9 @@ namespace Lox
         }
 
         return std::any{};
+    }
+    int LoxFunction::getArity() const
+    {
+        return static_cast<int>(declaration->getParams().size());
     }
 }

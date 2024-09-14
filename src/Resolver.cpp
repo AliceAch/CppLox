@@ -6,13 +6,13 @@ namespace Lox
         : interpreter(interpreter)
     {}
 
-    std::any Resolver::visit_expression_stmt(std::shared_ptr<const Expression> stmt)
+    std::any Resolver::visit_expression_stmt(std::shared_ptr<Expression> stmt)
     {
         resolve(stmt->expr);
         return {};
     }
 
-    std::any Resolver::visit_if_stmt(std::shared_ptr<const If> stmt)
+    std::any Resolver::visit_if_stmt(std::shared_ptr<If> stmt)
     {
         resolve(stmt->condition);
         resolve(stmt->thenBranch);
@@ -20,13 +20,13 @@ namespace Lox
         return {};
     }
 
-    std::any Resolver::visit_print_stmt(std::shared_ptr<const Print> stmt)
+    std::any Resolver::visit_print_stmt(std::shared_ptr<Print> stmt)
     {
         resolve(stmt->expr);
         return {};
     }
 
-    std::any Resolver::visit_return_stmt(std::shared_ptr<const Return> stmt)
+    std::any Resolver::visit_return_stmt(std::shared_ptr<Return> stmt)
     {
         if (currentFunction == NONE)
         {
@@ -40,21 +40,21 @@ namespace Lox
         return {};
     } 
 
-    std::any Resolver::visit_while_stmt(std::shared_ptr<const While> stmt)
+    std::any Resolver::visit_while_stmt(std::shared_ptr<While> stmt)
     {
         resolve(stmt->condition);
         resolve(stmt->body);
         return {};
     }
 
-    std::any Resolver::visit_binary_expr(std::shared_ptr<const Binary> expr)
+    std::any Resolver::visit_binary_expr(std::shared_ptr<Binary> expr)
     {
         resolve(expr->left);
         resolve(expr->right);
         return {};
     }
 
-    std::any Resolver::visit_call_expr(std::shared_ptr<const Call> expr)
+    std::any Resolver::visit_call_expr(std::shared_ptr<Call> expr)
     {
         resolve(expr->callee);
 
@@ -66,7 +66,13 @@ namespace Lox
         return {};
     }
 
-    std::any Resolver::visit_block_stmt(std::shared_ptr<const Block> stmt)
+    std::any Resolver::visit_get_expr(std::shared_ptr<Get> expr)
+    {
+        resolve(expr->object);
+        return {};
+    }
+
+    std::any Resolver::visit_block_stmt(std::shared_ptr<Block> stmt)
     {
         beginScope();
         resolve(stmt->stmt);
@@ -74,31 +80,45 @@ namespace Lox
         return {};
     }
 
-    std::any Resolver::visit_grouping_expr(std::shared_ptr<const Grouping> expr)
+    std::any Resolver::visit_class_stmt(std::shared_ptr<Class> stmt)
+    {
+        declare(stmt->getName());
+        define(stmt->getName());
+        return {};
+    }
+
+    std::any Resolver::visit_grouping_expr(std::shared_ptr<Grouping> expr)
     {
         resolve(expr->expr);
         return {};
     }
 
-    std::any Resolver::visit_literal_expr(std::shared_ptr<const Literal> expr)
+    std::any Resolver::visit_literal_expr(std::shared_ptr<Literal> expr)
     {
         return {};
     }
 
-    std::any  Resolver::visit_logical_expr(std::shared_ptr<const Logical> expr)
+    std::any  Resolver::visit_logical_expr(std::shared_ptr<Logical> expr)
     {
         resolve(expr->left);
         resolve(expr->right);
         return {};
     }
 
-    std::any Resolver::visit_unary_expr(std::shared_ptr<const Unary> expr)
+    std::any Resolver::visit_set_expr(std::shared_ptr<Set> expr)
+    {
+        resolve(expr->value);
+        resolve(expr->object);
+        return {};
+    }    
+
+    std::any Resolver::visit_unary_expr(std::shared_ptr<Unary> expr)
     {
         resolve(expr->right);
         return {};
     }
 
-    std::any Resolver::visit_var_stmt(std::shared_ptr<const Var> stmt) 
+    std::any Resolver::visit_var_stmt(std::shared_ptr<Var> stmt) 
     {
         declare(stmt->getName());
         if(stmt->initializer != nullptr)
@@ -109,7 +129,7 @@ namespace Lox
         return {};
     }
     
-    std::any Resolver::visit_variable_expr(std::shared_ptr<const Variable> expr)
+    std::any Resolver::visit_variable_expr(std::shared_ptr<Variable> expr)
     {
         if(!scopes.empty() &&
             scopes.back().find(expr->getName().lexeme) != scopes.back().end() && !scopes.back()[expr->getName().lexeme])
@@ -121,14 +141,14 @@ namespace Lox
         return {};
     }
 
-    std::any Resolver::visit_assign_expr(std::shared_ptr<const Assign> expr)
+    std::any Resolver::visit_assign_expr(std::shared_ptr<Assign> expr)
     {
         resolve(expr->value);
         resolveLocal(expr, expr->name);
         return {};
     }
 
-    std::any Resolver::visit_function_stmt(std::shared_ptr<const Function> stmt) 
+    std::any Resolver::visit_function_stmt(std::shared_ptr<Function> stmt) 
     {
         declare(stmt->name);
         define(stmt->name);
@@ -137,22 +157,22 @@ namespace Lox
         return {};
     }
 
-    void Resolver::resolve(const std::vector<std::shared_ptr<const Stmt>>& statements)
+    void Resolver::resolve(const std::vector<std::shared_ptr<Stmt>>& statements)
     {
         for (auto& statement : statements)
         {
             resolve(statement);
         }
     }
-    void Resolver::resolve(const std::shared_ptr<const Stmt>& stmt)
+    void Resolver::resolve(const std::shared_ptr<Stmt>& stmt)
     {
         stmt->accept(*this);
     }
-    void Resolver::resolve(const std::shared_ptr<const Expr>& expr)
+    void Resolver::resolve(const std::shared_ptr<Expr>& expr)
     {
         expr->accept(*this);
     }
-    void Resolver::resolveFunction(const std::shared_ptr<const Function>& function, FunctionType type)
+    void Resolver::resolveFunction(const std::shared_ptr<Function>& function, FunctionType type)
     {
         FunctionType enclosingFunction = currentFunction;
         currentFunction = type;
@@ -191,7 +211,7 @@ namespace Lox
             return;
         scopes.back()[name.lexeme] = true;
     }
-    void Resolver::resolveLocal(std::shared_ptr<const Expr> expr, const Token& name)
+    void Resolver::resolveLocal(std::shared_ptr<Expr> expr, const Token& name)
     {
         for(int i = scopes.size() - 1; i >= 0; i--)
         {

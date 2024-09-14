@@ -8,11 +8,11 @@ namespace Lox {
   {
     return paranthesise(expr.op.lexeme, {expr.left.get(), expr.right.get()});
   }
-  std::any AstPrinter::visit_literal_expr(std::shared_ptr<const Literal> expr)
+  std::any AstPrinter::visit_literal_expr(std::shared_ptr<Literal> expr)
   {
     std::stringstream stream("");
     // Fix std::any conversion errors here
-    if (expr.literal.type() == typeid(double)) {
+    if (expr->literal.type() == typeid(double)) {
         double n = std::any_cast<double>(expr.literal);
         if (std::trunc(n) == n) { // is int
             return std::to_string((int)n);

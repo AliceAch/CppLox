@@ -2,6 +2,7 @@
 
 #include "Interpreter.h"
 #include "Lox.h"
+#include "LoxClass.h"
 
 #include <iostream>
 
@@ -16,13 +17,13 @@ namespace Lox
     Interpreter::Interpreter(std::ostream& out) : out(out), globals(std::make_shared<Environment>()), 
     globalEnvironment(globals.get()) 
     {
-        globals->define("clock", std::forward<Callable>(Callable{0, &clock}));
+        globals->define("clock", std::forward<LoxFunction>(LoxFunction{0, &clock}));
         environment = globals;
     }
 
     Interpreter::~Interpreter() = default;
     
-    void Interpreter::interpret(const std::vector<std::shared_ptr<const Stmt>>& statements)
+    void Interpreter::interpret(const std::vector<std::shared_ptr<Stmt>>& statements)
     {
         try {
             for(const auto& ptr : statements)
@@ -41,12 +42,12 @@ namespace Lox
         return *globalEnvironment;
     }
 
-    void Interpreter::execute(std::shared_ptr<const Stmt> stmt)
+    void Interpreter::execute(std::shared_ptr<Stmt> stmt)
     {
         stmt->accept(*this);
     }
 
-    void Interpreter::executeBlock(const std::vector<std::shared_ptr<const Stmt>>& statements, 
+    void Interpreter::executeBlock(const std::vector<std::shared_ptr<Stmt>>& statements, 
             std::shared_ptr<Environment> Lenvironment)
     {
         EnterEnvironmentGuard ee{*this, Lenvironment};
@@ -56,25 +57,33 @@ namespace Lox
         }
     }
 
-    void Interpreter::resolve(const std::shared_ptr<const Expr>& expr, int depth)
+    void Interpreter::resolve(const std::shared_ptr<Expr>& expr, int depth)
     {
         locals[expr] = depth;
     }
 
-    std::any Interpreter::visit_block_stmt(std::shared_ptr<const Block> stmt)
+    std::any Interpreter::visit_block_stmt(std::shared_ptr<Block> stmt)
     {
         auto env = std::make_shared<Environment>(this->environment);
         executeBlock(stmt->getStmt(), env);
         return {}; 
     }
 
-    std::any Interpreter::visit_expression_stmt(std::shared_ptr<const Expression> stmt)
+    std::any Interpreter::visit_class_stmt(std::shared_ptr<Class> stmt)
+    {
+        environment->define(stmt->getName().lexeme, std::any{});
+        auto klass = std::make_shared<LoxClass>(stmt->getName().lexeme);
+        environment->assign(stmt->getName(), klass);
+        return {};
+    }
+
+    std::any Interpreter::visit_expression_stmt(std::shared_ptr<Expression> stmt)
     {
         evaluate(stmt->expr);
         return {};
     }
 
-    std::any Interpreter::visit_if_stmt(std::shared_ptr<const If> stmt)
+    std::any Interpreter::visit_if_stmt(std::shared_ptr<If> stmt)
     {
         if(isTruthy(evaluate(stmt->condition)))
         {
@@ -86,17 +95,17 @@ namespace Lox
         return {};
     }
 
-    std::any Interpreter::visit_function_stmt(std::shared_ptr<const Function> stmt)
+    std::any Interpreter::visit_function_stmt(std::shared_ptr<Function> stmt)
     {
 //        const Callable function(&stmt, std::make_unique<Environment>(environment.get()));
         //static_assert(std::is_copy_constructible_v<Callable>);
         //auto fun = Callable(&stmt, std::make_shared<Environment>(*environment));
-        auto fun = Callable(stmt, environment);
+        auto fun = std::make_shared<LoxFunction>(stmt, environment);
         environment->define(stmt->getName().lexeme, fun);
         return {};
     }
 
-    std::any Interpreter::visit_print_stmt(std::shared_ptr<const Print> stmt)
+    std::any Interpreter::visit_print_stmt(std::shared_ptr<Print> stmt)
     {
         std::any value = evaluate(stmt->expr);
         // Using cout here because idk how to use the fmt library
@@ -104,7 +113,7 @@ namespace Lox
         return {};
     }
 
-    std::any Interpreter::visit_return_stmt(std::shared_ptr<const Return> stmt)
+    std::any Interpreter::visit_return_stmt(std::shared_ptr<Return> stmt)
     {
         std::any value;
         if(stmt->value.get() != nullptr) 
@@ -115,7 +124,7 @@ namespace Lox
         throw ReturnException(value);
     }
 
-    std::any Interpreter::visit_var_stmt(std::shared_ptr<const Var> stmt)
+    std::any Interpreter::visit_var_stmt(std::shared_ptr<Var> stmt)
     {
       std::any value;
       if (stmt->initializer != nullptr)
@@ -127,7 +136,7 @@ namespace Lox
       return {};
     }
 
-    std::any Interpreter::visit_while_stmt(std::shared_ptr<const While> stmt)
+    std::any Interpreter::visit_while_stmt(std::shared_ptr<While> stmt)
     {
         while(isTruthy(evaluate(stmt->condition)))
         {
@@ -137,7 +146,7 @@ namespace Lox
         return {};
     }
 
-    std::any Interpreter::visit_assign_expr(std::shared_ptr<const Assign> expr)
+    std::any Interpreter::visit_assign_expr(std::shared_ptr<Assign> expr)
     {
       std::any value = evaluate(expr->value);
       assert(environment != nullptr);
@@ -152,12 +161,12 @@ namespace Lox
       return value;
     }
 
-    std::any Interpreter::visit_literal_expr(std::shared_ptr<const Literal> expr)
+    std::any Interpreter::visit_literal_expr(std::shared_ptr<Literal> expr)
     {
         return expr->getLiteral();
     }
 
-    std::any Interpreter::visit_logical_expr(std::shared_ptr<const Logical> expr)
+    std::any Interpreter::visit_logical_expr(std::shared_ptr<Logical> expr)
     {
         std::any left = evaluate(expr->left);
 
@@ -172,12 +181,26 @@ namespace Lox
         return evaluate(expr->right);
     }
 
-    std::any Interpreter::visit_grouping_expr(std::shared_ptr<const Grouping> expr)
+    std::any Interpreter::visit_set_expr(std::shared_ptr<Set> expr)
+    {
+        std::any object = evaluate(expr->object);
+
+        if (!(object.type() == typeid(std::shared_ptr<LoxInstance>)))
+        {
+            throw RuntimeError(expr->name, "Only instances have fields.");
+        }
+
+        std::any value = evaluate(expr->value);
+        std::any_cast<std::shared_ptr<LoxInstance>>(object)->set(expr->name, value);
+        return value;
+    }
+
+    std::any Interpreter::visit_grouping_expr(std::shared_ptr<Grouping> expr)
     {
         return evaluate(expr->expr);
     }
 
-    std::any Interpreter::visit_unary_expr(std::shared_ptr<const Unary> expr)
+    std::any Interpreter::visit_unary_expr(std::shared_ptr<Unary> expr)
     {
         const std::any right = evaluate(expr->right);
 
@@ -194,13 +217,13 @@ namespace Lox
         }
     }
 
-    std::any Interpreter::visit_variable_expr(std::shared_ptr<const Variable> expr)
+    std::any Interpreter::visit_variable_expr(std::shared_ptr<Variable> expr)
     {
       assert(environment != nullptr);
       return lookUpVariable(expr->name, expr);
     }
 
-    std::any Interpreter::lookUpVariable(const Token& name, std::shared_ptr<const Expr> expr)
+    std::any Interpreter::lookUpVariable(const Token& name, std::shared_ptr<Expr> expr)
     {
         if(locals.find(expr) != locals.end())
         {
@@ -213,7 +236,7 @@ namespace Lox
         }
     }
 
-    std::any Interpreter::visit_binary_expr(std::shared_ptr<const Binary> expr)
+    std::any Interpreter::visit_binary_expr(std::shared_ptr<Binary> expr)
     {
         const std::any left = evaluate(expr->left);
         const std::any right = evaluate(expr->right);
@@ -259,9 +282,9 @@ namespace Lox
         return std::any{};
     }
 
-    std::any Interpreter::visit_call_expr(std::shared_ptr<const Call> expr)
+    std::any Interpreter::visit_call_expr(std::shared_ptr<Call> expr)
     {
-        std::any callee = evaluate(expr->callee);
+        auto callee = std::make_shared<std::any>(evaluate(expr->callee));
 
         std::vector<std::any> arguments;
         for(const auto& argument : expr->getArguments())
@@ -269,20 +292,42 @@ namespace Lox
             arguments.push_back(evaluate(argument));
         }
 
-        if(callee.type() != typeid(Callable))
+        // This is a terrible solution, but I made the mistake of using std::any so this code is the result
+        // Have to check whether the the callee is a function or a class before casting it in to a Callable 
+        // pointer
+        std::shared_ptr<Callable> function;
+
+        if(callee->type() == typeid(std::shared_ptr<LoxFunction>))
+        {
+            function = std::any_cast<std::shared_ptr<LoxFunction>>(*callee);
+        }
+        else if (callee->type() == typeid(std::shared_ptr<LoxClass>))
+        {
+            function = std::any_cast<std::shared_ptr<LoxClass>>(*callee);
+        }
+        else
         {
             throw RuntimeError(expr->getParen(), "Can only call functions and classes.");
         }
 
-        auto function = std::any_cast<Callable>(callee);
-
-        if(arguments.size() != function.getArity()) 
+        if(arguments.size() != function->getArity()) 
         {
             throw RuntimeError(expr->getParen(), fmt::format("Expected {} arguments, but got {}.",
-                function.getArity(), arguments.size()));
+                function->getArity(), arguments.size()));
         }
 
-        return function.call(*this, arguments);
+        return function->call(*this, arguments);
+    }
+
+    std::any Interpreter::visit_get_expr(std::shared_ptr<Get> expr)
+    {
+        std::any object = evaluate(expr->object);
+        if(object.type() == typeid(std::shared_ptr<LoxInstance>))
+        {
+            return std::any_cast<std::shared_ptr<LoxInstance>>(object)->get(expr->name);
+        }
+
+        throw RuntimeError(expr->name, "Only instances have properties.");
     }
 
     std::string Interpreter::stringify(const std::any& object)
@@ -301,17 +346,22 @@ namespace Lox
                 return std::to_string(n);
             }
         }
-        if(object.type() == typeid(Callable))
-            return fmt::format("<fn {}>", std::any_cast<Callable>(object).getDeclaration()->getName().lexeme);
+        if(object.type() == typeid(std::shared_ptr<LoxFunction>))
+            return fmt::format("<fn {}>", std::any_cast<std::shared_ptr<LoxFunction>>(object)->getDeclaration()->getName().lexeme);
+        if(object.type() == typeid(std::shared_ptr<LoxClass>))
+            return fmt::format("<cl {}>", std::any_cast<std::shared_ptr<LoxClass>>(object)->toString());
+        if(object.type() == typeid(std::shared_ptr<LoxInstance>))
+            return std::any_cast<std::shared_ptr<LoxInstance>>(object)->toString();
         if(object.type() == typeid(std::string)) 
         {
             return std::any_cast<std::string>(object);
         }
+        //assert(false);
 
         return "";
     } 
 
-    std::any Interpreter::evaluate(std::shared_ptr<const Expr> expr)
+    std::any Interpreter::evaluate(std::shared_ptr<Expr> expr)
     {
         return expr->accept(*this);
     }

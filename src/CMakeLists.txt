@@ -25,6 +25,8 @@ target_sources(lox
         Interpreter.cpp
         Environment.cpp
         Resolver.cpp
+        LoxClass.cpp
+        LoxInstance.cpp
 )
 
 add_executable(lox_repl)

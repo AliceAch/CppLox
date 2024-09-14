@@ -9,7 +9,7 @@ def define_ast(output_dir, base_name, types, includes = []):
 
     for name, members in type_items:
         arglist = ", ".join(
-            "std::shared_ptr<const {}> {}".format(t, n)
+            "std::shared_ptr<{}> {}".format(t, n)
             if i else "{} {}".format(t, n)
             for t, n , i in members)
         initialisers = ", ".join(
@@ -17,7 +17,7 @@ def define_ast(output_dir, base_name, types, includes = []):
             if i else "{}({})".format(n, n)
             for t, n, i in members)
         member_vars = "\n    ".join(
-            "std::shared_ptr<const {}> {};". format(t, n)
+            "std::shared_ptr<{}> {};". format(t, n)
             if i else "{} {};".format(t, n)
             for t, n, i in members)
         asserts = "\n       ".join(
@@ -47,11 +47,14 @@ if __name__ == "__main__":
         "Assign"   : [("Token", "name", False), ("Expr", "value", True)],
         "Binary"   : [("Expr", "left", True), ("Token",  "op", False), 
                       ("Expr", "right", True)],
-        "Call"     : [("Expr", "callee", True), ("Token", "paren", False), ("std::vector<std::shared_ptr<const Expr>>", "arguments", False)], 
+        "Call"     : [("Expr", "callee", True), ("Token", "paren", False), ("std::vector<std::shared_ptr<Expr>>", "arguments", False)], 
         #make sure you change the initializer to be std::move 
+        "Get"      : [("Expr", "object", True), ("Token", "name", False)],
         "Grouping" : [("Expr", "expr", True)],
         "Literal"  : [("std::any", "literal", False)],
         "Logical"  : [("Expr", "left", True), ("Token", "op", False), ("Expr", "right", True)],
+        "Set"      : [("Expr", "object", True), ("Token", "name", False), ("Expr", "value", True)],
+        "This"     : [("Token", "keyword", False)],
         "Unary"    : [("Token", "op", False), ("Expr", "right", True)],
         "Variable" : [("Token", "name", False)]
         }

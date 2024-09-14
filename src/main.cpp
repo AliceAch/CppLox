@@ -22,7 +22,7 @@ void run(const std::string& source)
 {
   Lox::Scanner scanner(source);
   Lox::Parser parser(scanner.scanTokens());
-  std::vector<std::shared_ptr<const Lox::Stmt>> statements = parser.parse();
+  std::vector<std::shared_ptr<Lox::Stmt>> statements = parser.parse();
 
   if (Lox::Lox::HadError) {
     return;

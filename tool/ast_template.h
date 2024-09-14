@@ -21,17 +21,17 @@ namespace Lox
   public:
     ~{{base_name|lower}}Visitor() = default;
     {% for spec in class_specs %}
-    virtual R visit_{{ spec.name|lower }}_{{ base_name|lower }}(std::shared_ptr<const {{ spec.name }}> {{ base_name|lower }}) = 0;{% endfor %}
+    virtual R visit_{{ spec.name|lower }}_{{ base_name|lower }}(std::shared_ptr<{{ spec.name }}> {{ base_name|lower }}) = 0;{% endfor %}
   };
 
-  struct {{ base_name }}
+  struct {{ base_name }} : public std::enable_shared_from_this<{{ base_name }}>
   {
     virtual ~{{ base_name }}() = default;
 
     virtual std::any accept({{ base_name|lower }}Visitor<std::any>& visitor) const = 0;
   };
 {% for spec in class_specs %}
-  struct {{ spec.name }} : public {{ base_name }}, std::enable_shared_from_this<{{ spec.name }}>
+  struct {{ spec.name }} : public {{ base_name }}
   {
     {{ spec.name }}({{ spec.arglist }})
         : {{ spec.initialisers }}
@@ -40,7 +40,7 @@ namespace Lox
 
     std::any accept({{ base_name|lower}}Visitor<std::any>& visitor) const
     { 
-      return visitor.visit_{{ spec.name|lower }}_{{ base_name|lower }}(shared_from_this()); 
+      return visitor.visit_{{ spec.name|lower }}_{{ base_name|lower }}(std::static_pointer_cast<{{ spec.name }}>(shared_from_this())); 
     }
 
     {{ spec.getters }}
