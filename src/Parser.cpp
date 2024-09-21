@@ -440,6 +440,11 @@ namespace Lox
             return std::make_shared<Literal>(previous().literal);
         }
 
+        if(match(TokenType::THIS))
+        {
+            return std::make_shared<This>(previous());
+        }
+
         if(match(TokenType::IDENTIFIER))
         {
           return std::make_shared<Variable>(previous());

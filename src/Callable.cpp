@@ -10,8 +10,8 @@ namespace Lox
     LoxFunction::LoxFunction(int arity, FuncType f) : arity(arity), f(f), declaration(nullptr)
     {}
 
-    LoxFunction::LoxFunction(std::shared_ptr<Function> declaration, std::shared_ptr<Environment> closure) : 
-    declaration(std::move(declaration)), closure(std::move(closure))
+    LoxFunction::LoxFunction(std::shared_ptr<Function> declaration, std::shared_ptr<Environment> closure, bool isInitializer) : 
+    declaration(std::move(declaration)), closure(std::move(closure)), isInitializer(isInitializer)
     {
     }
 /*
@@ -22,6 +22,13 @@ namespace Lox
         closure(std::make_shared<Environment>(*other.closure))
     {}
 */
+    std::shared_ptr<LoxFunction> LoxFunction::bind(std::shared_ptr<LoxInstance> instance)
+    {
+        std::shared_ptr<Environment> environment = std::make_shared<Environment>(closure);
+        environment->define("this", instance);
+        return std::make_shared<LoxFunction>(declaration, environment, isInitializer);
+    }
+
     std::any LoxFunction::call(Interpreter& interpreter, const std::vector<std::any>& arguments)
     {
         if (!declaration) 
@@ -44,12 +51,16 @@ namespace Lox
             interpreter.executeBlock(declaration->getBody(), env);
         } catch(const ReturnException& v)
         {
+            if (isInitializer)
+                return closure->getAt(0, "this");
             return v.getValue();
         }
 
+        if (isInitializer) 
+            return closure->getAt(0, "this");
         return std::any{};
     }
-    int LoxFunction::getArity() const
+    int LoxFunction::getArity()
     {
         return static_cast<int>(declaration->getParams().size());
     }

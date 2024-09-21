@@ -11,7 +11,7 @@ namespace Lox
 {
     class LoxClass;
 
-    class LoxInstance
+    class LoxInstance : public std::enable_shared_from_this<LoxInstance>
     {
     public:
         LoxInstance(const std::shared_ptr<LoxClass>& klass);

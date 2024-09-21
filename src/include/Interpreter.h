@@ -46,6 +46,7 @@ namespace Lox
         std::any visit_literal_expr(std::shared_ptr<Literal> expr) override;
         std::any visit_logical_expr(std::shared_ptr<Logical> expr) override;
         std::any visit_set_expr(std::shared_ptr<Set> expr) override;
+        std::any visit_this_expr(std::shared_ptr<This> expr) override;
         std::any visit_grouping_expr(std::shared_ptr<Grouping> expr) override;
         std::any visit_unary_expr(std::shared_ptr<Unary> expr) override;
         std::any visit_variable_expr(std::shared_ptr<Variable> expr) override;

@@ -28,13 +28,17 @@ namespace Lox
 
     std::any Resolver::visit_return_stmt(std::shared_ptr<Return> stmt)
     {
-        if (currentFunction == NONE)
+        if (currentFunction == FNONE)
         {
             Lox::Error(stmt->keyword, "Can't return from type-level code.");
         }
 
         if (stmt->value != nullptr)
         {
+            if (currentFunction == FunctionType::INITIALIZER)
+            {
+                Lox::Error(stmt->keyword, "Can't return a value from an initializer.");
+            }
             resolve(stmt->value);
         }
         return {};
@@ -82,8 +86,27 @@ namespace Lox
 
     std::any Resolver::visit_class_stmt(std::shared_ptr<Class> stmt)
     {
+        ClassType enclosingClass = currentClass;
+        currentClass = ClassType::CLASS;
         declare(stmt->getName());
         define(stmt->getName());
+
+        beginScope();
+        scopes.back()["this"] = true;
+
+        for (auto& method : stmt->methods)
+        {
+            FunctionType declaration = FunctionType::METHOD;
+            if (method->name.lexeme == "init")
+            {
+                declaration = FunctionType::INITIALIZER;
+            }
+            resolveFunction(method, declaration);
+        }
+
+        endScope();
+
+        currentClass = enclosingClass;
         return {};
     }
 
@@ -111,6 +134,17 @@ namespace Lox
         resolve(expr->object);
         return {};
     }    
+
+    std::any Resolver::visit_this_expr(std::shared_ptr<This> expr)
+    {
+        if (currentClass == ClassType::CNONE)
+        {
+            Lox::Error(expr->keyword, "Can't use 'this' outside of a class.");
+            return {};
+        }
+        resolveLocal(expr, expr->keyword);
+        return {};
+    }
 
     std::any Resolver::visit_unary_expr(std::shared_ptr<Unary> expr)
     {

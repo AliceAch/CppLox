@@ -72,7 +72,14 @@ namespace Lox
     std::any Interpreter::visit_class_stmt(std::shared_ptr<Class> stmt)
     {
         environment->define(stmt->getName().lexeme, std::any{});
-        auto klass = std::make_shared<LoxClass>(stmt->getName().lexeme);
+
+        std::unordered_map<std::string, std::shared_ptr<LoxFunction>> methods;
+        for(auto& method : stmt->methods)
+        {
+            std::shared_ptr<LoxFunction> function = std::make_shared<LoxFunction>(method, environment, method->name.lexeme == "init");
+            methods[method->name.lexeme] = std::move(function);
+        }
+        auto klass = std::make_shared<LoxClass>(stmt->getName().lexeme, methods);
         environment->assign(stmt->getName(), klass);
         return {};
     }
@@ -100,7 +107,7 @@ namespace Lox
 //        const Callable function(&stmt, std::make_unique<Environment>(environment.get()));
         //static_assert(std::is_copy_constructible_v<Callable>);
         //auto fun = Callable(&stmt, std::make_shared<Environment>(*environment));
-        auto fun = std::make_shared<LoxFunction>(stmt, environment);
+        auto fun = std::make_shared<LoxFunction>(stmt, environment, false);
         environment->define(stmt->getName().lexeme, fun);
         return {};
     }
@@ -193,6 +200,11 @@ namespace Lox
         std::any value = evaluate(expr->value);
         std::any_cast<std::shared_ptr<LoxInstance>>(object)->set(expr->name, value);
         return value;
+    }
+
+    std::any Interpreter::visit_this_expr(std::shared_ptr<This> expr)
+    {
+        return lookUpVariable(expr->keyword, expr);
     }
 
     std::any Interpreter::visit_grouping_expr(std::shared_ptr<Grouping> expr)

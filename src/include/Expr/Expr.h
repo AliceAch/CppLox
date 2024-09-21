@@ -20,7 +20,7 @@ namespace Lox
   struct Literal;
   struct Logical;
   struct Set;
-  //struct This;
+  struct This;
   struct Unary;
   struct Variable;
 
@@ -38,7 +38,7 @@ namespace Lox
     virtual R visit_literal_expr(std::shared_ptr<Literal> expr) = 0;
     virtual R visit_logical_expr(std::shared_ptr<Logical> expr) = 0;
     virtual R visit_set_expr(std::shared_ptr<Set> expr) = 0;
-    //virtual R visit_this_expr(std::shared_ptr<This> expr) = 0;
+    virtual R visit_this_expr(std::shared_ptr<This> expr) = 0;
     virtual R visit_unary_expr(std::shared_ptr<Unary> expr) = 0;
     virtual R visit_variable_expr(std::shared_ptr<Variable> expr) = 0;
   };
@@ -213,7 +213,7 @@ namespace Lox
     Token name;
     std::shared_ptr<Expr> value;
   };
-/*
+
   struct This : public Expr
   {
     This(Token keyword)
@@ -230,7 +230,7 @@ namespace Lox
 
     Token keyword;
   };
-*/
+
   struct Unary : public Expr
   {
     Unary(Token op, std::shared_ptr<Expr> right)

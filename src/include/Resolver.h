@@ -15,8 +15,16 @@ namespace Lox
     private:
         enum FunctionType
         {
-            NONE,
-            FUNCTION
+            FNONE,
+            FUNCTION,
+            INITIALIZER,
+            METHOD
+        };
+        
+        enum ClassType 
+        {
+            CNONE,
+            CLASS
         };
 
     public:
@@ -36,6 +44,7 @@ namespace Lox
         std::any visit_literal_expr(std::shared_ptr<Literal> expr) override;
         std::any visit_logical_expr(std::shared_ptr<Logical> expr) override;
         std::any visit_set_expr(std::shared_ptr<Set> expr) override;
+        std::any visit_this_expr(std::shared_ptr<This> expr) override;
         std::any visit_grouping_expr(std::shared_ptr<Grouping> expr) override;
         std::any visit_unary_expr(std::shared_ptr<Unary> expr) override;
         std::any visit_variable_expr(std::shared_ptr<Variable> expr) override;
@@ -56,6 +65,7 @@ namespace Lox
         void resolveLocal(std::shared_ptr<Expr> expr, const Token& name);
         Interpreter& interpreter;
         std::vector<std::unordered_map<std::string, bool>> scopes;
-        FunctionType currentFunction = NONE;
+        FunctionType currentFunction = FNONE;
+        ClassType currentClass = ClassType::CNONE;
     };
 }

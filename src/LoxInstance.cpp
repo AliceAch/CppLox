@@ -15,6 +15,10 @@ namespace Lox
         if(fields.find(name.lexeme) != fields.end())
             return fields.at(name.lexeme);
 
+        std::shared_ptr<LoxFunction> method = klass->findMethod(name.lexeme);
+        if (method != nullptr)
+            return method->bind(std::static_pointer_cast<LoxInstance>(shared_from_this()));
+
         throw RuntimeError(name, "Undefined property '" + name.lexeme + "'.");
     }
 
