@@ -46,8 +46,8 @@ if __name__ == "__main__":
         {
             "Block"      : [("std::vector<std::shared_ptr<Stmt>>", "stmt", False)], 
             #make sure you change the initializer to be std::move 
-            "Class"      : [("Token", "name", False), ("std::vector<std::shared_ptr<Function>>", "methods", False)],
-            #make methods initializer to be std::move
+            "Class"      : [("Token", "name", False), ("std::shared_ptr<Variable>", "superclass", False) ("std::vector<std::shared_ptr<Function>>", "methods", False)],
+            #make methods and superclass initializer to be std::move
             "Expression" : [("Expr", "expr", True)],
             "Function"   : [("Token", "name", False), ("std::vector<Token>", "params", False), 
                             ("std::vector<std::shared_ptr<Stmt>>", "body", False)], #Here too (std::move params and body)

@@ -67,8 +67,8 @@ namespace Lox
 
   struct Class : public Stmt
   {
-    Class(Token name, std::vector<std::shared_ptr<Function>> methods)
-        : name(name), methods(std::move(methods))
+    Class(Token name, std::shared_ptr<Variable> superclass, std::vector<std::shared_ptr<Function>> methods)
+        : name(name), superclass(std::move(superclass)), methods(std::move(methods))
     { 
        
     }
@@ -79,9 +79,11 @@ namespace Lox
     }
 
     const Token& getName() const { return name; }
+    const std::shared_ptr<Variable>& getSuperClass() const { return superclass; }
     const std::vector<std::shared_ptr<Function>>& getMethods() const { return methods; }
 
     Token name;
+    std::shared_ptr<Variable> superclass;
     std::vector<std::shared_ptr<Function>> methods;
   };
 

@@ -20,6 +20,7 @@ namespace Lox
   struct Literal;
   struct Logical;
   struct Set;
+  struct Super;
   struct This;
   struct Unary;
   struct Variable;
@@ -38,6 +39,7 @@ namespace Lox
     virtual R visit_literal_expr(std::shared_ptr<Literal> expr) = 0;
     virtual R visit_logical_expr(std::shared_ptr<Logical> expr) = 0;
     virtual R visit_set_expr(std::shared_ptr<Set> expr) = 0;
+    virtual R visit_super_expr(std::shared_ptr<Super> expr) = 0;
     virtual R visit_this_expr(std::shared_ptr<This> expr) = 0;
     virtual R visit_unary_expr(std::shared_ptr<Unary> expr) = 0;
     virtual R visit_variable_expr(std::shared_ptr<Variable> expr) = 0;
@@ -212,6 +214,25 @@ namespace Lox
     std::shared_ptr<Expr> object;
     Token name;
     std::shared_ptr<Expr> value;
+  };
+
+  struct Super : public Expr
+  {
+    Super(Token keyword, Token method)
+      : keyword(keyword), method(method)
+    {
+    
+    }
+
+    std::any accept(exprVisitor<std::any>& visitor)
+    {
+      return visitor.visit_super_expr(std::static_pointer_cast<Super>(shared_from_this()));
+    }
+    const Token& getKeyword() const { return keyword; }
+    const Token& getMethod() const { return keyword; }
+
+    Token keyword;
+    Token method;
   };
 
   struct This : public Expr

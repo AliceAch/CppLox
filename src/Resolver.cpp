@@ -91,6 +91,22 @@ namespace Lox
         declare(stmt->getName());
         define(stmt->getName());
 
+        if (stmt->superclass != nullptr)
+        {
+            if (stmt->name.lexeme == stmt->superclass->name.lexeme)
+            {
+                Lox::Error(stmt->superclass->name, "A class can't inherit from itself.");
+            }
+            currentClass = ClassType::SUBCLASS;
+            resolve(stmt->superclass);
+        }
+
+        if (stmt->superclass != nullptr)
+        {
+            beginScope();
+            scopes.back()["super"] = true;
+        }
+
         beginScope();
         scopes.back()["this"] = true;
 
@@ -105,6 +121,9 @@ namespace Lox
         }
 
         endScope();
+
+        if (stmt->superclass != nullptr)
+            endScope();
 
         currentClass = enclosingClass;
         return {};
@@ -134,6 +153,20 @@ namespace Lox
         resolve(expr->object);
         return {};
     }    
+
+    std::any Resolver::visit_super_expr(std::shared_ptr<Super> expr)
+    {
+        if (currentClass == ClassType::CNONE)
+        {
+            Lox::Error(expr->keyword, "Can't use 'super' outside of a class.");
+        } else if (currentClass != ClassType::SUBCLASS)
+        {
+            Lox::Error(expr->keyword, "Can't use 'super' in a class with no superclass.");
+        }
+        
+        resolveLocal(expr, expr->keyword);
+        return {};
+    }
 
     std::any Resolver::visit_this_expr(std::shared_ptr<This> expr)
     {

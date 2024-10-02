@@ -49,8 +49,16 @@ namespace Lox
 
     std::shared_ptr<Stmt> Parser::classDeclaration()
     {
-        //classDecl → "class" IDENTIFIER "{" function* "}" ;
+
+        //classDecl → "class" IDENTIFIER ("<" IDENTIFIER)? "{" function* "}" ;
         Token name = consume(TokenType::IDENTIFIER, "Expect class name.");
+
+        std::shared_ptr<Variable> superclass;
+        if (match(TokenType::LESS))
+        {
+            consume(TokenType::IDENTIFIER, "Expect superclass name.");
+            superclass = std::make_shared<Variable>(previous());
+        }
         consume(TokenType::LEFT_BRACE, "Expect '{' before class body.");
 
         std::vector<std::shared_ptr<Function>> methods;
@@ -61,7 +69,7 @@ namespace Lox
 
         consume(TokenType::RIGHT_BRACE, "Expect '}' after class body.");
 
-        return std::make_shared<Class>(name, methods);
+        return std::make_shared<Class>(name, superclass, methods);
     }
 
     std::shared_ptr<Stmt> Parser::statement()
@@ -420,8 +428,9 @@ namespace Lox
 
     std::shared_ptr<Expr> Parser::primary()
     {
-        // primary → NUMBER | STRING | "false" | "true" | "nil"
-        // IDENTIFIER | "(" expression ")" ;
+        //primary        → "true" | "false" | "nil" | "this"
+        //       | NUMBER | STRING | IDENTIFIER | "(" expression ")"
+        //       | "super" "." IDENTIFIER ;
         if(match(TokenType::FALSE))
         {
             return std::make_shared<Literal>(false);
@@ -434,12 +443,17 @@ namespace Lox
         {
             return std::make_shared<Literal>(std::any{});
         }
-
         if(match(TokenType::NUMBER, TokenType::STRING))
         {
             return std::make_shared<Literal>(previous().literal);
         }
-
+        if(match(TokenType::SUPER))
+        {
+            Token keyword = previous();
+            consume(TokenType::DOT, "Expect '.' after 'super'.");
+            Token method = consume(TokenType::IDENTIFIER, "Expect superclass method name");
+            return std::make_shared<Super>(keyword, method);
+        }
         if(match(TokenType::THIS))
         {
             return std::make_shared<This>(previous());

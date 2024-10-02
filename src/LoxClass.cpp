@@ -2,14 +2,19 @@
 
 namespace Lox
 {
-    LoxClass::LoxClass(const std::string& name, std::unordered_map<std::string, std::shared_ptr<LoxFunction>> methods)
-        : name(name), methods(methods)
+    LoxClass::LoxClass(const std::string& name, std::shared_ptr<LoxClass> superclass, std::unordered_map<std::string, std::shared_ptr<LoxFunction>> methods)
+        : name(name), superclass(std::move(superclass)), methods(methods)
     {}
 
     std::shared_ptr<LoxFunction> LoxClass::findMethod(const std::string& name) const
     {
         if (methods.find(name) != methods.end())
             return methods.at(name);
+
+        if (superclass != nullptr)
+        {
+            return superclass->findMethod(name);
+        }
 
         return nullptr;
     }

@@ -54,6 +54,7 @@ if __name__ == "__main__":
         "Literal"  : [("std::any", "literal", False)],
         "Logical"  : [("Expr", "left", True), ("Token", "op", False), ("Expr", "right", True)],
         "Set"      : [("Expr", "object", True), ("Token", "name", False), ("Expr", "value", True)],
+        "Super"    : [("Token", "keyword", False), ("Token", "method", False)],
         "This"     : [("Token", "keyword", False)],
         "Unary"    : [("Token", "op", False), ("Expr", "right", True)],
         "Variable" : [("Token", "name", False)]

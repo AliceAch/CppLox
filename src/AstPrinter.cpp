@@ -3,6 +3,7 @@
 
 #include "AstPrinter.h"
 
+// This file is not being used anymore
 namespace Lox { 
   std::any AstPrinter::visit_binary_expr(std::shared_ptr<const Binary> expr)
   {

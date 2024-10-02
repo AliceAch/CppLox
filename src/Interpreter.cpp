@@ -71,7 +71,23 @@ namespace Lox
 
     std::any Interpreter::visit_class_stmt(std::shared_ptr<Class> stmt)
     {
+
+        std::any superklass;
+        if (stmt->superclass != nullptr)
+        {
+            superklass = evaluate(stmt->superclass);
+            if (superklass.type() != typeid(std::shared_ptr<LoxClass>))
+            {
+                throw RuntimeError(stmt->superclass->name, "Superclass must be a class.");
+            }
+        }
         environment->define(stmt->getName().lexeme, std::any{});
+
+        if (stmt->superclass != nullptr)
+        {
+            environment = std::make_shared<Environment>(environment);
+            environment->define("super", superklass);
+        }
 
         std::unordered_map<std::string, std::shared_ptr<LoxFunction>> methods;
         for(auto& method : stmt->methods)
@@ -79,7 +95,17 @@ namespace Lox
             std::shared_ptr<LoxFunction> function = std::make_shared<LoxFunction>(method, environment, method->name.lexeme == "init");
             methods[method->name.lexeme] = std::move(function);
         }
-        auto klass = std::make_shared<LoxClass>(stmt->getName().lexeme, methods);
+        std::shared_ptr<LoxClass> klass;
+        if (superklass.has_value())
+        {
+            klass = std::make_shared<LoxClass>(stmt->getName().lexeme, std::any_cast<std::shared_ptr<LoxClass>>(superklass), methods);
+            environment = environment->enclosing;
+        }
+        else 
+        {
+            klass = std::make_shared<LoxClass>(stmt->getName().lexeme, nullptr, methods);
+        }
+
         environment->assign(stmt->getName(), klass);
         return {};
     }
@@ -200,6 +226,24 @@ namespace Lox
         std::any value = evaluate(expr->value);
         std::any_cast<std::shared_ptr<LoxInstance>>(object)->set(expr->name, value);
         return value;
+    }
+
+    std::any Interpreter::visit_super_expr(std::shared_ptr<Super> expr)
+    {
+        int distance = locals.at(expr);
+        // Might need type checking?
+        auto superklass = std::any_cast<std::shared_ptr<LoxClass>>(environment->getAt(distance, "super"));
+
+        auto object = std::any_cast<std::shared_ptr<LoxInstance>>(environment->getAt(distance - 1, "this"));
+
+        std::shared_ptr<LoxFunction> method = superklass->findMethod(expr->method.lexeme);
+
+        if (method == nullptr)
+        {
+            throw RuntimeError(expr->method, "Undefined property '" + expr->method.lexeme + "'.");
+        }
+
+        return method->bind(object);
     }
 
     std::any Interpreter::visit_this_expr(std::shared_ptr<This> expr)
