@@ -62,6 +62,8 @@ namespace Lox
     }
     int LoxFunction::getArity()
     {
-        return static_cast<int>(declaration->getParams().size());
+        if (declaration)
+            return static_cast<int>(declaration->getParams().size());
+        return arity;
     }
 }

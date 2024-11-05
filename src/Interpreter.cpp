@@ -17,7 +17,7 @@ namespace Lox
     Interpreter::Interpreter(std::ostream& out) : out(out), globals(std::make_shared<Environment>()), 
     globalEnvironment(globals.get()) 
     {
-        globals->define("clock", std::forward<LoxFunction>(LoxFunction{0, &clock}));
+        globals->define("clock", std::make_shared<LoxFunction>(0, &clock));
         environment = globals;
     }
 
