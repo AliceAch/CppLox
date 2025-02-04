@@ -37,9 +37,6 @@ build/
 # Tool directory
 #tool/
 
-#Personal access token
-PAT.txt
-
 #VS code stuff
 .vscode/
 
